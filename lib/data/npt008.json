@@ -1,0 +1,852 @@
+[
+  {
+    "grupo": "A",
+    "ocupacao": "Residencial",
+    "divisao": "A-1",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 30,
+      "Classe P2 6 < h ≤12": 30,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 120,
+      "Classe P7 120 < h ≤150": 150,
+      "Classe P8 150 < h ≤250": 180
+    }
+  },
+  {
+    "grupo": "A",
+    "ocupacao": "Residencial",
+    "divisao": "A-3",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 30,
+      "Classe P2 6 < h ≤12": 30,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 120,
+      "Classe P7 120 < h ≤150": 150,
+      "Classe P8 150 < h ≤250": 180
+    }
+  },
+  {
+    "grupo": "B",
+    "ocupacao": "Serviços de Hospedagem",
+    "divisao": "B-1",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 30,
+      "Classe P2 6 < h ≤12": 60,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 150,
+      "Classe P7 120 < h ≤150": 180,
+      "Classe P8 150 < h ≤250": 180
+    }
+  },
+  {
+    "grupo": "B",
+    "ocupacao": "Serviços de Hospedagem",
+    "divisao": "B-2",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 30,
+      "Classe P2 6 < h ≤12": 60,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 150,
+      "Classe P7 120 < h ≤150": 180,
+      "Classe P8 150 < h ≤250": 180
+    }
+  },
+  {
+    "grupo": "C",
+    "ocupacao": "Comercial Varejista",
+    "divisao": "C-1",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 60,
+      "Classe P2 6 < h ≤12": 60,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 150,
+      "Classe P7 120 < h ≤150": 150,
+      "Classe P8 150 < h ≤250": 180
+    }
+  },
+  {
+    "grupo": "C",
+    "ocupacao": "Comercial Varejista",
+    "divisao": "C-2",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 60,
+      "Classe P2 6 < h ≤12": 60,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 150,
+      "Classe P7 120 < h ≤150": 150,
+      "Classe P8 150 < h ≤250": 180
+    }
+  },
+  {
+    "grupo": "C",
+    "ocupacao": "Comercial Varejista",
+    "divisao": "C-3",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 60,
+      "Classe P2 6 < h ≤12": 60,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 150,
+      "Classe P7 120 < h ≤150": 150,
+      "Classe P8 150 < h ≤250": 180
+    }
+  },
+  {
+    "grupo": "D",
+    "ocupacao": "Serviços Profissionais e Técnicos",
+    "divisao": "D-1",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 30,
+      "Classe P2 6 < h ≤12": 60,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 120,
+      "Classe P7 120 < h ≤150": 150,
+      "Classe P8 150 < h ≤250": 180
+    }
+  },
+  {
+    "grupo": "D",
+    "ocupacao": "Serviços Profissionais e Técnicos",
+    "divisao": "D-2",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 30,
+      "Classe P2 6 < h ≤12": 60,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 120,
+      "Classe P7 120 < h ≤150": 150,
+      "Classe P8 150 < h ≤250": 180
+    }
+  },
+  {
+    "grupo": "D",
+    "ocupacao": "Serviços Profissionais e Técnicos",
+    "divisao": "D-3",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 30,
+      "Classe P2 6 < h ≤12": 60,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 120,
+      "Classe P7 120 < h ≤150": 150,
+      "Classe P8 150 < h ≤250": 180
+    }
+  },
+  {
+    "grupo": "E",
+    "ocupacao": "Educacional e Cultura Física",
+    "divisao": "E-1",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 30,
+      "Classe P2 6 < h ≤12": 30,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 120,
+      "Classe P7 120 < h ≤150": 150,
+      "Classe P8 150 < h ≤250": 180
+    }
+  },
+  {
+    "grupo": "E",
+    "ocupacao": "Educacional e Cultura Física",
+    "divisao": "E-2",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 30,
+      "Classe P2 6 < h ≤12": 30,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 120,
+      "Classe P7 120 < h ≤150": 150,
+      "Classe P8 150 < h ≤250": 180
+    }
+  },
+  {
+    "grupo": "E",
+    "ocupacao": "Educacional e Cultura Física",
+    "divisao": "E-3",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 30,
+      "Classe P2 6 < h ≤12": 30,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 120,
+      "Classe P7 120 < h ≤150": 150,
+      "Classe P8 150 < h ≤250": 180
+    }
+  },
+  {
+    "grupo": "E",
+    "ocupacao": "Educacional e Cultura Física",
+    "divisao": "E-4",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 30,
+      "Classe P2 6 < h ≤12": 30,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 120,
+      "Classe P7 120 < h ≤150": 150,
+      "Classe P8 150 < h ≤250": 180
+    }
+  },
+  {
+    "grupo": "E",
+    "ocupacao": "Educacional e Cultura Física",
+    "divisao": "E-5",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 30,
+      "Classe P2 6 < h ≤12": 30,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 120,
+      "Classe P7 120 < h ≤150": 150,
+      "Classe P8 150 < h ≤250": 180
+    }
+  },
+  {
+    "grupo": "E",
+    "ocupacao": "Educacional e Cultura Física",
+    "divisao": "E-6",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 30,
+      "Classe P2 6 < h ≤12": 30,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 120,
+      "Classe P7 120 < h ≤150": 150,
+      "Classe P8 150 < h ≤250": 180
+    }
+  },
+  {
+    "grupo": "F",
+    "ocupacao": "Locais de Reunião de Público",
+    "divisao": "F-1",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 60,
+      "Classe P2 6 < h ≤12": 60,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 150,
+      "Classe P7 120 < h ≤150": 180,
+      "Classe P8 150 < h ≤250": "-"
+    }
+  },
+  {
+    "grupo": "F",
+    "ocupacao": "Locais de Reunião de Público",
+    "divisao": "F-2",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 60,
+      "Classe P2 6 < h ≤12": 60,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 150,
+      "Classe P7 120 < h ≤150": 180,
+      "Classe P8 150 < h ≤250": "-"
+    }
+  },
+  {
+    "grupo": "F",
+    "ocupacao": "Locais de Reunião de Público",
+    "divisao": "F-5",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 60,
+      "Classe P2 6 < h ≤12": 60,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 150,
+      "Classe P7 120 < h ≤150": 180,
+      "Classe P8 150 < h ≤250": "-"
+    }
+  },
+  {
+    "grupo": "F",
+    "ocupacao": "Locais de Reunião de Público",
+    "divisao": "F-6",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 60,
+      "Classe P2 6 < h ≤12": 60,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 150,
+      "Classe P7 120 < h ≤150": 180,
+      "Classe P8 150 < h ≤250": "-"
+    }
+  },
+  {
+    "grupo": "F",
+    "ocupacao": "Locais de Reunião de Público",
+    "divisao": "F-8",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 60,
+      "Classe P2 6 < h ≤12": 60,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 150,
+      "Classe P7 120 < h ≤150": 180,
+      "Classe P8 150 < h ≤250": "-"
+    }
+  },
+  {
+    "grupo": "F",
+    "ocupacao": "Locais de Reunião de Público",
+    "divisao": "F-10",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 60,
+      "Classe P2 6 < h ≤12": 60,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 150,
+      "Classe P7 120 < h ≤150": 180,
+      "Classe P8 150 < h ≤250": "-"
+    }
+  },
+  {
+    "grupo": "F",
+    "ocupacao": "Locais de Reunião de Público",
+    "divisao": "F-3",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": "Ver item   A.2.3.1",
+      "Classe P2 6 < h ≤12": "Ver item   A.2.3.2",
+      "Classe P3 12 < h ≤23": 30,
+      "Classe P4 23 < h ≤30": 60,
+      "Classe P5 30 < h ≤80": 60,
+      "Classe P6 80 < h ≤120": 90,
+      "Classe P7 120 < h ≤150": 120,
+      "Classe P8 150 < h ≤250": "-"
+    }
+  },
+  {
+    "grupo": "F",
+    "ocupacao": "Locais de Reunião de Público",
+    "divisao": "F-4",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": "Ver item   A.2.3.2",
+      "Classe P2 6 < h ≤12": "Ver item   A.2.3.3",
+      "Classe P3 12 < h ≤23": 30,
+      "Classe P4 23 < h ≤30": 60,
+      "Classe P5 30 < h ≤80": 60,
+      "Classe P6 80 < h ≤120": 90,
+      "Classe P7 120 < h ≤150": 120,
+      "Classe P8 150 < h ≤250": "-"
+    }
+  },
+  {
+    "grupo": "F",
+    "ocupacao": "Locais de Reunião de Público",
+    "divisao": "F-7",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": "Ver item   A.2.3.3",
+      "Classe P2 6 < h ≤12": "Ver item   A.2.3.4",
+      "Classe P3 12 < h ≤23": 30,
+      "Classe P4 23 < h ≤30": 60,
+      "Classe P5 30 < h ≤80": 60,
+      "Classe P6 80 < h ≤120": 90,
+      "Classe P7 120 < h ≤150": 120,
+      "Classe P8 150 < h ≤250": "-"
+    }
+  },
+  {
+    "grupo": "F",
+    "ocupacao": "Locais de Reunião de Público",
+    "divisao": "F-9",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 30,
+      "Classe P2 6 < h ≤12": 60,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": "-",
+      "Classe P7 120 < h ≤150": "-",
+      "Classe P8 150 < h ≤250": "-"
+    }
+  },
+  {
+    "grupo": "G",
+    "ocupacao": "Serviços Automotivos",
+    "divisao": "G-1",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 30,
+      "Classe P2 6 < h ≤12": 60,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 120,
+      "Classe P7 120 < h ≤150": 150,
+      "Classe P8 150 < h ≤250": 180
+    }
+  },
+  {
+    "grupo": "G",
+    "ocupacao": "Serviços Automotivos",
+    "divisao": "G-2",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 30,
+      "Classe P2 6 < h ≤12": 60,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 120,
+      "Classe P7 120 < h ≤150": 150,
+      "Classe P8 150 < h ≤250": 180
+    }
+  },
+  {
+    "grupo": "G",
+    "ocupacao": "Serviços Automotivos",
+    "divisao": "G-3",
+    "trrf": {
+      "Classe S2 hs > 10": null,
+      "Classe S1 hs ≤10": null,
+      "Classe P1 h ≤  6": null,
+      "Classe P2 6 < h ≤12": null,
+      "Classe P3 12 < h ≤23": null,
+      "Classe P4 23 < h ≤30": null,
+      "Classe P5 30 < h ≤80": null,
+      "Classe P6 80 < h ≤120": null,
+      "Classe P7 120 < h ≤150": null,
+      "Classe P8 150 < h ≤250": null
+    }
+  },
+  {
+    "grupo": "G",
+    "ocupacao": "Serviços Automotivos",
+    "divisao": "G-5",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 30,
+      "Classe P2 6 < h ≤12": 60,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 120,
+      "Classe P7 120 < h ≤150": 150,
+      "Classe P8 150 < h ≤250": 180
+    }
+  },
+  {
+    "grupo": "G",
+    "ocupacao": "Serviços Automotivos",
+    "divisao": "G-1",
+    "trrf": {
+      "Classe S2 hs > 10": null,
+      "Classe S1 hs ≤10": null,
+      "Classe P1 h ≤  6": null,
+      "Classe P2 6 < h ≤12": null,
+      "Classe P3 12 < h ≤23": null,
+      "Classe P4 23 < h ≤30": null,
+      "Classe P5 30 < h ≤80": null,
+      "Classe P6 80 < h ≤120": null,
+      "Classe P7 120 < h ≤150": null,
+      "Classe P8 150 < h ≤250": null
+    }
+  },
+  {
+    "grupo": "G",
+    "ocupacao": "Serviços Automotivos",
+    "divisao": "G-2",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 30,
+      "Classe P2 6 < h ≤12": 30,
+      "Classe P3 12 < h ≤23": 30,
+      "Classe P4 23 < h ≤30": 30,
+      "Classe P5 30 < h ≤80": 60,
+      "Classe P6 80 < h ≤120": 120,
+      "Classe P7 120 < h ≤150": 120,
+      "Classe P8 150 < h ≤250": 150
+    }
+  },
+  {
+    "grupo": "H",
+    "ocupacao": "Serviços de Saúde e Institucionais",
+    "divisao": "H-1",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 30,
+      "Classe P2 6 < h ≤12": 60,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 150,
+      "Classe P7 120 < h ≤150": 180,
+      "Classe P8 150 < h ≤250": 180
+    }
+  },
+  {
+    "grupo": "H",
+    "ocupacao": "Serviços de Saúde e Institucionais",
+    "divisao": "H-4",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 30,
+      "Classe P2 6 < h ≤12": 60,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 150,
+      "Classe P7 120 < h ≤150": 180,
+      "Classe P8 150 < h ≤250": 180
+    }
+  },
+  {
+    "grupo": "H",
+    "ocupacao": "Serviços de Saúde e Institucionais",
+    "divisao": "H-2",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 30,
+      "Classe P2 6 < h ≤12": 60,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 150,
+      "Classe P7 120 < h ≤150": 180,
+      "Classe P8 150 < h ≤250": 180
+    }
+  },
+  {
+    "grupo": "H",
+    "ocupacao": "Serviços de Saúde e Institucionais",
+    "divisao": "H-3",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 30,
+      "Classe P2 6 < h ≤12": 60,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 150,
+      "Classe P7 120 < h ≤150": 180,
+      "Classe P8 150 < h ≤250": 180
+    }
+  },
+  {
+    "grupo": "H",
+    "ocupacao": "Serviços de Saúde e Institucionais",
+    "divisao": "H-5",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 30,
+      "Classe P2 6 < h ≤12": 60,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 150,
+      "Classe P7 120 < h ≤150": 180,
+      "Classe P8 150 < h ≤250": 180
+    }
+  },
+  {
+    "grupo": "I",
+    "ocupacao": "Industrial",
+    "divisao": "I-1",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 30,
+      "Classe P2 6 < h ≤12": 30,
+      "Classe P3 12 < h ≤23": 30,
+      "Classe P4 23 < h ≤30": 60,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": "-",
+      "Classe P7 120 < h ≤150": "-",
+      "Classe P8 150 < h ≤250": "-"
+    }
+  },
+  {
+    "grupo": "I",
+    "ocupacao": "Industrial",
+    "divisao": "I-2",
+    "trrf": {
+      "Classe S2 hs > 10": 120,
+      "Classe S1 hs ≤10": 90,
+      "Classe P1 h ≤  6": 30,
+      "Classe P2 6 < h ≤12": 30,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 90,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": "-",
+      "Classe P7 120 < h ≤150": "-",
+      "Classe P8 150 < h ≤250": "-"
+    }
+  },
+  {
+    "grupo": "I",
+    "ocupacao": "Industrial",
+    "divisao": "I-3",
+    "trrf": {
+      "Classe S2 hs > 10": 120,
+      "Classe S1 hs ≤10": 90,
+      "Classe P1 h ≤  6": 60,
+      "Classe P2 6 < h ≤12": 60,
+      "Classe P3 12 < h ≤23": 90,
+      "Classe P4 23 < h ≤30": 120,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": "-",
+      "Classe P7 120 < h ≤150": "-",
+      "Classe P8 150 < h ≤250": "-"
+    }
+  },
+  {
+    "grupo": "J",
+    "ocupacao": "Depósitos",
+    "divisao": "J-1",
+    "trrf": {
+      "Classe S2 hs > 10": 60,
+      "Classe S1 hs ≤10": 30,
+      "Classe P1 h ≤  6": "Ver item   A.2.3.4",
+      "Classe P2 6 < h ≤12": "Ver item   A.2.3.5",
+      "Classe P3 12 < h ≤23": 30,
+      "Classe P4 23 < h ≤30": 30,
+      "Classe P5 30 < h ≤80": 60,
+      "Classe P6 80 < h ≤120": "-",
+      "Classe P7 120 < h ≤150": "-",
+      "Classe P8 150 < h ≤250": "-"
+    }
+  },
+  {
+    "grupo": "J",
+    "ocupacao": "Depósitos",
+    "divisao": "J-2",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 30,
+      "Classe P2 6 < h ≤12": 30,
+      "Classe P3 12 < h ≤23": 30,
+      "Classe P4 23 < h ≤30": 30,
+      "Classe P5 30 < h ≤80": 60,
+      "Classe P6 80 < h ≤120": "-",
+      "Classe P7 120 < h ≤150": "-",
+      "Classe P8 150 < h ≤250": "-"
+    }
+  },
+  {
+    "grupo": "J",
+    "ocupacao": "Depósitos",
+    "divisao": "J-3",
+    "trrf": {
+      "Classe S2 hs > 10": 90,
+      "Classe S1 hs ≤10": 60,
+      "Classe P1 h ≤  6": 30,
+      "Classe P2 6 < h ≤12": 60,
+      "Classe P3 12 < h ≤23": 60,
+      "Classe P4 23 < h ≤30": 120,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": "-",
+      "Classe P7 120 < h ≤150": "-",
+      "Classe P8 150 < h ≤250": "-"
+    }
+  },
+  {
+    "grupo": "J",
+    "ocupacao": "Depósitos",
+    "divisao": "J-4",
+    "trrf": {
+      "Classe S2 hs > 10": 120,
+      "Classe S1 hs ≤10": 90,
+      "Classe P1 h ≤  6": 60,
+      "Classe P2 6 < h ≤12": 60,
+      "Classe P3 12 < h ≤23": 90,
+      "Classe P4 23 < h ≤30": 120,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": "-",
+      "Classe P7 120 < h ≤150": "-",
+      "Classe P8 150 < h ≤250": "-"
+    }
+  },
+  {
+    "grupo": "L",
+    "ocupacao": "Explosivos",
+    "divisao": "L-1",
+    "trrf": {
+      "Classe S2 hs > 10": 120,
+      "Classe S1 hs ≤10": 120,
+      "Classe P1 h ≤  6": 120,
+      "Classe P2 6 < h ≤12": "-",
+      "Classe P3 12 < h ≤23": "-",
+      "Classe P4 23 < h ≤30": "-",
+      "Classe P5 30 < h ≤80": "-",
+      "Classe P6 80 < h ≤120": "-",
+      "Classe P7 120 < h ≤150": "-",
+      "Classe P8 150 < h ≤250": "-"
+    }
+  },
+  {
+    "grupo": "L",
+    "ocupacao": "Explosivos",
+    "divisao": "L-2",
+    "trrf": {
+      "Classe S2 hs > 10": 120,
+      "Classe S1 hs ≤10": 120,
+      "Classe P1 h ≤  6": 120,
+      "Classe P2 6 < h ≤12": "-",
+      "Classe P3 12 < h ≤23": "-",
+      "Classe P4 23 < h ≤30": "-",
+      "Classe P5 30 < h ≤80": "-",
+      "Classe P6 80 < h ≤120": "-",
+      "Classe P7 120 < h ≤150": "-",
+      "Classe P8 150 < h ≤250": "-"
+    }
+  },
+  {
+    "grupo": "L",
+    "ocupacao": "Explosivos",
+    "divisao": "L-3",
+    "trrf": {
+      "Classe S2 hs > 10": 120,
+      "Classe S1 hs ≤10": 120,
+      "Classe P1 h ≤  6": 120,
+      "Classe P2 6 < h ≤12": "-",
+      "Classe P3 12 < h ≤23": "-",
+      "Classe P4 23 < h ≤30": "-",
+      "Classe P5 30 < h ≤80": "-",
+      "Classe P6 80 < h ≤120": "-",
+      "Classe P7 120 < h ≤150": "-",
+      "Classe P8 150 < h ≤250": "-"
+    }
+  },
+  {
+    "grupo": "M",
+    "ocupacao": "Especial",
+    "divisao": "M-1",
+    "trrf": {
+      "Classe S2 hs > 10": 150,
+      "Classe S1 hs ≤10": 150,
+      "Classe P1 h ≤  6": 150,
+      "Classe P2 6 < h ≤12": "-",
+      "Classe P3 12 < h ≤23": "-",
+      "Classe P4 23 < h ≤30": "-",
+      "Classe P5 30 < h ≤80": "-",
+      "Classe P6 80 < h ≤120": "-",
+      "Classe P7 120 < h ≤150": "-",
+      "Classe P8 150 < h ≤250": "-"
+    }
+  },
+  {
+    "grupo": "M",
+    "ocupacao": "Especial",
+    "divisao": "M-3",
+    "trrf": {
+      "Classe S2 hs > 10": 120,
+      "Classe S1 hs ≤10": 90,
+      "Classe P1 h ≤  6": 90,
+      "Classe P2 6 < h ≤12": 90,
+      "Classe P3 12 < h ≤23": 120,
+      "Classe P4 23 < h ≤30": 120,
+      "Classe P5 30 < h ≤80": 120,
+      "Classe P6 80 < h ≤120": 150,
+      "Classe P7 120 < h ≤150": "-",
+      "Classe P8 150 < h ≤250": "-"
+    }
+  },
+  {
+    "grupo": "M",
+    "ocupacao": "Especial",
+    "divisao": "M-5",
+    "trrf": {
+      "Classe S2 hs > 10": 120,
+      "Classe S1 hs ≤10": 90,
+      "Classe P1 h ≤  6": 60,
+      "Classe P2 6 < h ≤12": 60,
+      "Classe P3 12 < h ≤23": 90,
+      "Classe P4 23 < h ≤30": 120,
+      "Classe P5 30 < h ≤80": "-",
+      "Classe P6 80 < h ≤120": "-",
+      "Classe P7 120 < h ≤150": "-",
+      "Classe P8 150 < h ≤250": "-"
+    }
+  }
+]

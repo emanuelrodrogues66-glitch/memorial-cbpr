@@ -1,0 +1,717 @@
+[
+  {
+    "divisao": "A-1",
+    "grupo_descricao": "RESIDENCAL",
+    "grupo": "A",
+    "populacao_descricao": "Duas pessoas por dormitório",
+    "densidade_m2_por_pessoa": null,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 60,
+      "escada": 45,
+      "rampa": 45,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "A-2",
+    "grupo_descricao": "RESIDENCAL",
+    "grupo": "",
+    "populacao_descricao": "",
+    "densidade_m2_por_pessoa": null,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 60,
+      "escada": 45,
+      "rampa": 45,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "A-3",
+    "grupo_descricao": "RESIDENCAL",
+    "grupo": "",
+    "populacao_descricao": "Duas pessoas por dormitório e uma pessoa por 4,0 m² de área de alojamento",
+    "densidade_m2_por_pessoa": null,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 60,
+      "escada": 45,
+      "rampa": 45,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "B-1",
+    "grupo_descricao": "RESIDENCAL",
+    "grupo": "B",
+    "populacao_descricao": "Uma pessoa por 15,0 m² de área",
+    "densidade_m2_por_pessoa": 5.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 60,
+      "escada": 45,
+      "rampa": 45,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "B-2",
+    "grupo_descricao": "SERVIÇOS DE HOSPEDAGEM",
+    "grupo": "B",
+    "populacao_descricao": "Uma pessoa por 15,0 m² de área",
+    "densidade_m2_por_pessoa": 5.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 60,
+      "escada": 45,
+      "rampa": 45,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "C-1",
+    "grupo_descricao": "COMERCIAL",
+    "grupo": "C",
+    "populacao_descricao": "Uma pessoa por 5,0 m² de área",
+    "densidade_m2_por_pessoa": 5.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 75,
+      "rampa": 75,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "C-2",
+    "grupo_descricao": "COMERCIAL",
+    "grupo": "C",
+    "populacao_descricao": "Uma pessoa por 5,0 m² de área",
+    "densidade_m2_por_pessoa": 5.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 75,
+      "rampa": 75,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "C-3",
+    "grupo_descricao": "COMERCIAL",
+    "grupo": "C",
+    "populacao_descricao": "Uma pessoa por 5,0 m² de área",
+    "densidade_m2_por_pessoa": 5.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 75,
+      "rampa": 75,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "D-1",
+    "grupo_descricao": "SERVIÇO PROFISSIONAL",
+    "grupo": "D",
+    "populacao_descricao": "Uma pessoa por 7,0 m² de área",
+    "densidade_m2_por_pessoa": 7.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 75,
+      "rampa": 75,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "D-2",
+    "grupo_descricao": "SERVIÇO PROFISSIONAL",
+    "grupo": "D",
+    "populacao_descricao": "Uma pessoa por 7,0 m² de área",
+    "densidade_m2_por_pessoa": 7.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 75,
+      "rampa": 75,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "D-3",
+    "grupo_descricao": "SERVIÇO PROFISSIONAL",
+    "grupo": "D",
+    "populacao_descricao": "Uma pessoa por 7,0 m² de área",
+    "densidade_m2_por_pessoa": 7.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 75,
+      "rampa": 75,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "E-1",
+    "grupo_descricao": "EDUCACIONAL",
+    "grupo": "E",
+    "populacao_descricao": "Uma  pessoa  por  1,50  m²  de  área   de  sala  de aula",
+    "densidade_m2_por_pessoa": 1.5,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 75,
+      "rampa": 75,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "E-2",
+    "grupo_descricao": "EDUCACIONAL",
+    "grupo": "E",
+    "populacao_descricao": "Uma  pessoa  por  1,50  m²  de  área   de  sala  de aula",
+    "densidade_m2_por_pessoa": 1.5,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 75,
+      "rampa": 75,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "E-3",
+    "grupo_descricao": "EDUCACIONAL",
+    "grupo": "E",
+    "populacao_descricao": "Uma  pessoa  por  1,50  m²  de  área   de  sala  de aula",
+    "densidade_m2_por_pessoa": 1.5,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 75,
+      "rampa": 75,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "E-4",
+    "grupo_descricao": "EDUCACIONAL",
+    "grupo": "E",
+    "populacao_descricao": "Uma  pessoa  por  1,50  m²  de  área   de  sala  de aula",
+    "densidade_m2_por_pessoa": 1.5,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 75,
+      "rampa": 75,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "E-5",
+    "grupo_descricao": "EDUCACIONAL",
+    "grupo": "E",
+    "populacao_descricao": "Uma  pessoa  por  1,50  m²  de  área   de  sala  de aula",
+    "densidade_m2_por_pessoa": 1.5,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 30,
+      "escada": 22,
+      "rampa": 22,
+      "porta": 30
+    }
+  },
+  {
+    "divisao": "E-6",
+    "grupo_descricao": "EDUCACIONAL",
+    "grupo": "E",
+    "populacao_descricao": "Uma  pessoa  por  1,50  m²  de  área   de  sala  de aula",
+    "densidade_m2_por_pessoa": 1.5,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 30,
+      "escada": 22,
+      "rampa": 22,
+      "porta": 30
+    }
+  },
+  {
+    "divisao": "F-1",
+    "grupo_descricao": "REUNIÃO DE PÚBLICO",
+    "grupo": "F",
+    "populacao_descricao": "Uma pessoa por 3,0 m² de área",
+    "densidade_m2_por_pessoa": 3.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 75,
+      "rampa": 75,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "F-10",
+    "grupo_descricao": "REUNIÃO DE PÚBLICO",
+    "grupo": "F",
+    "populacao_descricao": "Uma pessoa por 3,0 m² de área",
+    "densidade_m2_por_pessoa": 3.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 75,
+      "rampa": 75,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "F-2",
+    "grupo_descricao": "REUNIÃO DE PÚBLICO",
+    "grupo": "F",
+    "populacao_descricao": "Uma pessoa por 1,0 m² de área",
+    "densidade_m2_por_pessoa": 1.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 75,
+      "rampa": 75,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "F-5",
+    "grupo_descricao": "REUNIÃO DE PÚBLICO",
+    "grupo": "F",
+    "populacao_descricao": "Uma pessoa por 1,0 m² de área",
+    "densidade_m2_por_pessoa": 1.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 75,
+      "rampa": 75,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "F-8",
+    "grupo_descricao": "REUNIÃO DE PÚBLICO",
+    "grupo": "F",
+    "populacao_descricao": "Uma pessoa por 1,0 m² de área",
+    "densidade_m2_por_pessoa": 1.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 75,
+      "rampa": 75,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "COZ.",
+    "grupo_descricao": "COZINHA",
+    "grupo": "-",
+    "populacao_descricao": "Uma pessoa por 7,0 m² de área",
+    "densidade_m2_por_pessoa": 7.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 75,
+      "rampa": 75,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "F-3",
+    "grupo_descricao": "REUNIÃO DE PÚBLICO",
+    "grupo": "F",
+    "populacao_descricao": "Duas pessoas por 1,0 m² de área",
+    "densidade_m2_por_pessoa": 0.5,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 75,
+      "rampa": 75,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "F-6",
+    "grupo_descricao": "REUNIÃO DE PÚBLICO",
+    "grupo": "F",
+    "populacao_descricao": "Duas pessoas por 1,0 m² de área",
+    "densidade_m2_por_pessoa": 0.5,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 75,
+      "rampa": 75,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "F-7",
+    "grupo_descricao": "REUNIÃO DE PÚBLICO",
+    "grupo": "F",
+    "populacao_descricao": "Duas pessoas por 1,0 m² de área",
+    "densidade_m2_por_pessoa": 0.5,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 75,
+      "rampa": 75,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "F-9",
+    "grupo_descricao": "REUNIÃO DE PÚBLICO",
+    "grupo": "F",
+    "populacao_descricao": "Duas pessoas por 1,0 m² de área",
+    "densidade_m2_por_pessoa": 0.5,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 75,
+      "rampa": 75,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "F-11",
+    "grupo_descricao": "REUNIÃO DE PÚBLICO",
+    "grupo": "F",
+    "populacao_descricao": "Duas pessoas por 1,0 m² de área",
+    "densidade_m2_por_pessoa": 0.5,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 75,
+      "rampa": 75,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "F-4",
+    "grupo_descricao": "REUNIÃO DE PÚBLICO",
+    "grupo": "F",
+    "populacao_descricao": "Uma pessoa por 3,0 m² de área",
+    "densidade_m2_por_pessoa": 3.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 75,
+      "rampa": 75,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "G-1",
+    "grupo_descricao": "GARAGEM DE VEÍCULOS",
+    "grupo": "G",
+    "populacao_descricao": "Uma pessoa por 40 vagas de veículo",
+    "densidade_m2_por_pessoa": 40.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 60,
+      "rampa": 60,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "G-2",
+    "grupo_descricao": "GARAGEM DE VEÍCULOS",
+    "grupo": "G",
+    "populacao_descricao": "Uma pessoa por 40 vagas de veículo",
+    "densidade_m2_por_pessoa": 40.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 60,
+      "rampa": 60,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "G-3",
+    "grupo_descricao": "GARAGEM DE VEÍCULOS",
+    "grupo": "G",
+    "populacao_descricao": "Uma pessoa por 40 vagas de veículo",
+    "densidade_m2_por_pessoa": 40.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 60,
+      "rampa": 60,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "G-4",
+    "grupo_descricao": "GARAGEM DE VEÍCULOS",
+    "grupo": "G",
+    "populacao_descricao": "Uma pessoa por 20,0 m² de área",
+    "densidade_m2_por_pessoa": 20.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 60,
+      "rampa": 60,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "G-5",
+    "grupo_descricao": "GARAGEM DE VEÍCULOS",
+    "grupo": "G",
+    "populacao_descricao": "Uma pessoa por 20,0 m² de área",
+    "densidade_m2_por_pessoa": 20.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 60,
+      "rampa": 60,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "H-1",
+    "grupo_descricao": "HOSPITAL E ASSEMELHADO",
+    "grupo": "H",
+    "populacao_descricao": "Uma pessoa por 7,0 m² de área",
+    "densidade_m2_por_pessoa": 7.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 60,
+      "escada": 45,
+      "rampa": 45,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "H-6",
+    "grupo_descricao": "HOSPITAL E ASSEMELHADO",
+    "grupo": "",
+    "populacao_descricao": "Uma pessoa por 7,0 m² de área",
+    "densidade_m2_por_pessoa": 7.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 60,
+      "escada": 45,
+      "rampa": 45,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "H-2",
+    "grupo_descricao": "HOSPITAL E ASSEMELHADO",
+    "grupo": "",
+    "populacao_descricao": "Duas  pessoas  por  dormitório  e  uma  pessoa por 4,0 m² de área de alojamento",
+    "densidade_m2_por_pessoa": 0.5,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 30,
+      "escada": 22,
+      "rampa": 22,
+      "porta": 30
+    }
+  },
+  {
+    "divisao": "H-3",
+    "grupo_descricao": "HOSPITAL E ASSEMELHADO",
+    "grupo": "",
+    "populacao_descricao": "Uma pessoa e meia por leito + uma pessoa por 7,0 m² de área de ambulatório",
+    "densidade_m2_por_pessoa": 0.6666666666666666,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 30,
+      "escada": 22,
+      "rampa": 22,
+      "porta": 30
+    }
+  },
+  {
+    "divisao": "H-3",
+    "grupo_descricao": "HOSPITAL E ASSEMELHADO",
+    "grupo": "",
+    "populacao_descricao": "Uma pessoa e meia por leito + uma pessoa por 7,0 m² de área de ambulatório",
+    "densidade_m2_por_pessoa": 0.6666666666666666,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 30,
+      "escada": 22,
+      "rampa": 22,
+      "porta": 30
+    }
+  },
+  {
+    "divisao": "H-4",
+    "grupo_descricao": "HOSPITAL E ASSEMELHADO",
+    "grupo": "",
+    "populacao_descricao": "Uma pessoa por 7,0 m² de área",
+    "densidade_m2_por_pessoa": 7.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 60,
+      "escada": 45,
+      "rampa": 45,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "H-5",
+    "grupo_descricao": "HOSPITAL E ASSEMELHADO",
+    "grupo": "",
+    "populacao_descricao": "Uma pessoa por 7,0 m² de área",
+    "densidade_m2_por_pessoa": 7.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 60,
+      "escada": 45,
+      "rampa": 45,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "I-1",
+    "grupo_descricao": "INDUSTRIAL",
+    "grupo": "I",
+    "populacao_descricao": "Uma pessoa por 10,0 m² de área",
+    "densidade_m2_por_pessoa": 10.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 60,
+      "rampa": 60,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "I-2",
+    "grupo_descricao": "INDUSTRIAL",
+    "grupo": "I",
+    "populacao_descricao": "Uma pessoa por 10,0 m² de área",
+    "densidade_m2_por_pessoa": 10.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 60,
+      "rampa": 60,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "I-3",
+    "grupo_descricao": "INDUSTRIAL",
+    "grupo": "I",
+    "populacao_descricao": "Uma pessoa por 10,0 m² de área",
+    "densidade_m2_por_pessoa": 10.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 60,
+      "rampa": 60,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "J-1",
+    "grupo_descricao": "DEPÓSITO",
+    "grupo": "J",
+    "populacao_descricao": "Uma pessoa por 30,0 m² de área",
+    "densidade_m2_por_pessoa": 30.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 60,
+      "rampa": 60,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "J-2",
+    "grupo_descricao": "DEPÓSITO",
+    "grupo": "J",
+    "populacao_descricao": "Uma pessoa por 30,0 m² de área",
+    "densidade_m2_por_pessoa": 30.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 60,
+      "rampa": 60,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "J-3",
+    "grupo_descricao": "DEPÓSITO",
+    "grupo": "J",
+    "populacao_descricao": "Uma pessoa por 30,0 m² de área",
+    "densidade_m2_por_pessoa": 30.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 60,
+      "rampa": 60,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "J-4",
+    "grupo_descricao": "DEPÓSITO",
+    "grupo": "J",
+    "populacao_descricao": "Uma pessoa por 30,0 m² de área",
+    "densidade_m2_por_pessoa": 30.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 60,
+      "rampa": 60,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "L-1",
+    "grupo_descricao": "EXPLOSIVOS",
+    "grupo": "L",
+    "populacao_descricao": "Uma pessoa por 3,0 m² de área",
+    "densidade_m2_por_pessoa": 3.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 60,
+      "rampa": 60,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "L-2",
+    "grupo_descricao": "EXPLOSIVOS",
+    "grupo": "",
+    "populacao_descricao": "",
+    "densidade_m2_por_pessoa": 3.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 60,
+      "rampa": 60,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "L-3",
+    "grupo_descricao": "EXPLOSIVOS",
+    "grupo": "",
+    "populacao_descricao": "Uma pessoa por 10,0 m² de área",
+    "densidade_m2_por_pessoa": 10.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 60,
+      "rampa": 60,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "M-1",
+    "grupo_descricao": "RISCO ESPECIAL",
+    "grupo": "M",
+    "populacao_descricao": "+",
+    "densidade_m2_por_pessoa": 10.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 75,
+      "rampa": 75,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "M-3",
+    "grupo_descricao": "RISCO ESPECIAL",
+    "grupo": "",
+    "populacao_descricao": "",
+    "densidade_m2_por_pessoa": 10.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 60,
+      "rampa": 60,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "M-5",
+    "grupo_descricao": "RISCO ESPECIAL",
+    "grupo": "",
+    "populacao_descricao": "Uma pessoa por 10,0 m² de área",
+    "densidade_m2_por_pessoa": 10.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 100,
+      "escada": 60,
+      "rampa": 60,
+      "porta": 100
+    }
+  },
+  {
+    "divisao": "M-4",
+    "grupo_descricao": "RISCO ESPECIAL",
+    "grupo": "",
+    "populacao_descricao": "Uma pessoa por 4,0 m² de área",
+    "densidade_m2_por_pessoa": 4.0,
+    "capacidade_unidade_passagem": {
+      "acesso_descarga": 60,
+      "escada": 45,
+      "rampa": 45,
+      "porta": 100
+    }
+  }
+]

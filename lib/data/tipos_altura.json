@@ -1,0 +1,8 @@
+[
+  { "tipo": "TIPO I",   "nome": "Edificação Térrea",                     "descricao": "Um pavimento",            "altura_min": 0,  "altura_max": 0 },
+  { "tipo": "TIPO II",  "nome": "Edificação Baixa",                      "descricao": "H ≤ 6,00 m",              "altura_min": 0,  "altura_max": 6 },
+  { "tipo": "TIPO III", "nome": "Edificação de Baixa-Média Altura",      "descricao": "6,00 m < H ≤ 12,00 m",    "altura_min": 6,  "altura_max": 12 },
+  { "tipo": "TIPO IV",  "nome": "Edificação de Média Altura",            "descricao": "12,00 m < H ≤ 23,00 m",   "altura_min": 12, "altura_max": 23 },
+  { "tipo": "TIPO V",   "nome": "Edificação Mediamente Alta",            "descricao": "23,00 m < H ≤ 30,00 m",   "altura_min": 23, "altura_max": 30 },
+  { "tipo": "TIPO VI",  "nome": "Edificação Alta",                       "descricao": "Acima de 30,00 m",        "altura_min": 30, "altura_max": null }
+]

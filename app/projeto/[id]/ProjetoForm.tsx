@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { buscarCnae, calcular, getCnae } from '@/lib/calculos';
 import RevitImportBanner from '@/components/RevitImportBanner';
+import RevitConexaoCard from '@/components/RevitConexaoCard';
 import type { CnaeRow, CnaeSelecionado } from '@/lib/types';
 import {
   DATA_SAIDAS,
@@ -116,7 +117,15 @@ export default function ProjetoForm({ projeto, profile }: { projeto: any; profil
           {etapa === 0 && <Etapa1 dados={dados} up={up} />}
           {etapa === 1 && <Etapa2 dados={dados} up={up} calc={calculados} />}
           {etapa === 2 && <Etapa3 dados={dados} up={up} calc={calculados} />}
-          {etapa === 3 && <Etapa4 dados={dados} up={up} calc={calculados} />}
+          {etapa === 3 && (
+            <Etapa4
+              dados={dados}
+              up={up}
+              calc={calculados}
+              projetoId={projeto.id}
+              revitToken={projeto.revit_token}
+            />
+          )}
           {etapa === 4 && <EtapaCargaIncendio dados={dados} up={up} calc={calculados} />}
           {etapa === 5 && <Etapa5 dados={dados} up={up} calc={calculados} />}
           {etapa === 6 && <Etapa6 dados={dados} up={up} calc={calculados} />}
@@ -373,7 +382,7 @@ function Etapa3({ dados, up, calc }: any) {
   );
 }
 
-function Etapa4({ dados, up, calc }: any) {
+function Etapa4({ dados, up, calc, projetoId, revitToken }: any) {
   const pavs: Pavimento[] = Array.isArray(dados.saidas_pavimentos)
     ? dados.saidas_pavimentos
     : [];
@@ -480,6 +489,8 @@ function Etapa4({ dados, up, calc }: any) {
           Nenhum pavimento ainda. Clique em "Novo pavimento / bloco" para começar.
         </div>
       )}
+
+      <RevitConexaoCard projetoId={projetoId} revitToken={revitToken} />
 
       <RevitImportBanner
         pavimentos={pavs}

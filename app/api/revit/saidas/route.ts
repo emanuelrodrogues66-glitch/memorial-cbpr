@@ -1,18 +1,16 @@
 // app/api/revit/saidas/route.ts
 //
-// Recebe os pavimentos enviados pelo plugin Revit (MemorialCBPR) e grava em
+// Recebe pavimentos do plugin Revit (MemorialCBPR) e grava em
 // memorial_projetos.dados.saidas_pavimentos.
 //
-// O plugin C# serializa em camelCase (componentesAtivos / saidasReais), mas o
-// app usa snake_case (componentes_ativos / saidas_reais). Este endpoint aceita
-// ambos os formatos e normaliza para snake_case antes de gravar.
+// Autenticacao: header Authorization: Bearer <revit_token>
+// O token e unico por projeto e fica disponivel na pagina do projeto no app.
+// Nao precisa de login do usuario, nao precisa de URL ou chave Supabase.
 //
-// POST /api/revit/saidas
-// Headers: Authorization: Bearer <supabase_access_token>  (opcional, se passar usa sessão)
-// Body:    { projeto_id: string, pavimentos: Pavimento[] }
+// Aceita payload em camelCase (do plugin C#) e snake_case (do app).
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 
 // -----------------------------------------------------------------------
@@ -21,7 +19,10 @@ import { z } from 'zod';
 const AmbienteSchema = z.object({
   id: z.number(),
   nome: z.string(),
-  div: z.string().regex(/^[A-M]-\d{1,2}$/, 'Divisão CSCIP inválida (ex: D-1, F-2)').or(z.literal('')),
+  div: z
+    .string()
+    .regex(/^[A-M]-\d{1,2}$/, 'Divisao CSCIP invalida (ex: D-1, F-2)')
+    .or(z.literal('')),
   area: z.number().min(0),
   excluir: z.number().min(0).default(0)
 });
@@ -32,7 +33,6 @@ const ComponentesAtivosSchema = z.object({
   acesso: z.boolean()
 });
 
-// Aceita as duas grafias e mapeia para snake_case
 const PavimentoSchema = z
   .object({
     id: z.number(),
@@ -61,70 +61,70 @@ const PayloadSchema = z.object({
 // -----------------------------------------------------------------------
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const parsed = PayloadSchema.safeParse(body);
+    // 1. Extrai o token Bearer
+    const auth = req.headers.get('authorization') || '';
+    const token = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
 
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Payload inválido', detalhes: parsed.error.flatten() },
-        { status: 400 }
-      );
-    }
-
-    const { projeto_id, pavimentos } = parsed.data;
-
-    const supabase = createClient();
-
-    // Verifica autenticação — depende da política RLS do Supabase
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
-    if (!user) {
+    if (!token) {
       return NextResponse.json(
         {
           error:
-            'Não autenticado. O plugin Revit precisa de um access token válido (Supabase anon + login do usuário).'
+            'Token de autenticacao ausente. Envie o header Authorization: Bearer <token>. O token esta na pagina do projeto no app.'
         },
         { status: 401 }
       );
     }
 
-    // Verifica ownership do projeto
-    const { data: projeto, error: errProjeto } = await supabase
-      .from('memorial_projetos')
-      .select('id, dados')
-      .eq('id', projeto_id)
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (errProjeto || !projeto) {
+    // 2. Valida payload
+    const body = await req.json();
+    const parsed = PayloadSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Projeto não encontrado ou sem permissão' },
-        { status: 404 }
+        { error: 'Payload invalido', detalhes: parsed.error.flatten() },
+        { status: 400 }
       );
     }
+    const { projeto_id, pavimentos } = parsed.data;
 
-    // Merge: preserva todos os dados existentes, substitui apenas saidas_pavimentos
-    const dadosAtualizados = {
-      ...(projeto.dados as Record<string, unknown>),
-      saidas_pavimentos: pavimentos
-    };
+    // 3. Chama a RPC do Supabase que valida token e grava
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const supabase = createSupabaseClient(url, anonKey);
 
-    const { error: errUpdate } = await supabase
-      .from('memorial_projetos')
-      .update({ dados: dadosAtualizados })
-      .eq('id', projeto_id);
+    const { data, error } = await supabase.rpc('revit_update_saidas', {
+      p_token: token,
+      p_projeto_id: projeto_id,
+      p_pavimentos: pavimentos
+    });
 
-    if (errUpdate) {
-      return NextResponse.json({ error: errUpdate.message }, { status: 500 });
+    if (error) {
+      // Token invalido = SQLSTATE 28000
+      const isAuthError = error.code === '28000' || /token/i.test(error.message);
+      return NextResponse.json(
+        { error: isAuthError ? 'Token invalido ou projeto nao encontrado' : error.message },
+        { status: isAuthError ? 401 : 500 }
+      );
     }
 
     return NextResponse.json({
       ok: true,
       pavimentos_importados: pavimentos.length,
-      ambientes_importados: pavimentos.reduce((s, p) => s + p.ambientes.length, 0)
+      ambientes_importados: pavimentos.reduce((s, p) => s + p.ambientes.length, 0),
+      rpc: data
     });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
+}
+
+// CORS preflight para o plugin desktop (origin null)
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'authorization, content-type'
+    }
+  });
 }

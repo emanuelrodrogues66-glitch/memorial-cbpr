@@ -3,6 +3,7 @@ import anexoA from './data/anexo_a.json';
 import npt008 from './data/npt008.json';
 import npt011 from './data/npt011.json';
 import tiposAltura from './data/tipos_altura.json';
+import { getMedidasCSCIP, type MedidaCSCIP } from './cscip-medidas';
 import type {
   CnaeRow,
   Npt008Row,
@@ -197,6 +198,15 @@ export function calcular(dados: any) {
     risco
   );
 
+  // Verificador CSCIP/PR: matriz Grupo+Divisão+Altura+Área → medidas
+  const cscip = divisao
+    ? getMedidasCSCIP(
+        divisao,
+        Number(dados.area_construida_m2) || 0,
+        Number(dados.altura_edificacao_m) || 0
+      )
+    : { medidas: [] as MedidaCSCIP[], simplificada: false };
+
   return {
     grupo: cnae?.grupo ?? dados.grupo ?? '',
     ocupacao: cnae?.ocupacao ?? dados.ocupacao ?? '',
@@ -214,6 +224,8 @@ export function calcular(dados: any) {
     unidades_passagem_porta: up.porta,
     brigadistas_necessarios: brig.brigadistas,
     brigadistas_descricao: brig.descricao,
-    medidas_protecao: medidas
+    medidas_protecao: medidas,
+    medidas_cscip: cscip.medidas,
+    cscip_simplificada: cscip.simplificada
   };
 }

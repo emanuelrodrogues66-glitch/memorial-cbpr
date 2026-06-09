@@ -1,6 +1,7 @@
 // PDF do Memorial Descritivo CBPR via @react-pdf/renderer
 import { Document, Page, Text, View, StyleSheet, pdf } from '@react-pdf/renderer';
 import React from 'react';
+import { getMedidasCSCIP } from './cscip-medidas';
 
 const styles = StyleSheet.create({
   page: { padding: 36, fontSize: 10, fontFamily: 'Helvetica', color: '#28251D' },
@@ -68,10 +69,22 @@ export function MemorialPdf({ d }: { d: any }) {
         <Linha k="Brigadistas" v={d.brigadistas_necessarios} />
         <Linha k="Critério" v={d.brigadistas_descricao} />
 
-        <Text style={styles.h2}>6. Medidas de proteção</Text>
+        <Text style={styles.h2}>6. Medidas de segurança contra incêndio (CSCIP/PR)</Text>
         <View style={styles.bullets}>
-          {(d.medidas_protecao ?? []).map((m: string, i: number) => (
-            <Text key={i} style={styles.p}>• {m}</Text>
+          {medidasComStatus(d).map((m, i) => (
+            <View key={i} style={{ marginBottom: 4 }}>
+              <Text style={styles.p}>
+                • {m.nome}{' '}
+                <Text style={{ color: m.status === 'EXIGIDO' ? '#A32D2D' : '#854F0B', fontSize: 8 }}>
+                  [{m.status === 'EXIGIDO' ? 'Exigido' : 'Condicional'}]
+                </Text>
+              </Text>
+              {m.observacao && (
+                <Text style={{ fontSize: 8, color: '#7A7974', paddingLeft: 10 }}>
+                  {m.observacao}
+                </Text>
+              )}
+            </View>
           ))}
         </View>
 
@@ -92,6 +105,33 @@ export function MemorialPdf({ d }: { d: any }) {
       </Page>
     </Document>
   );
+}
+
+// Combina lista do CSCIP (Exigido/Condicional + obs) com as escolhas do usuário.
+// Mostra todos os Exigidos sempre; mostra Condicionais só se o usuário marcou.
+function medidasComStatus(
+  d: any
+): { nome: string; status: 'EXIGIDO' | 'CONDICIONAL'; observacao?: string }[] {
+  const escolhidas = new Set<string>(d.medidas_protecao ?? []);
+  const lista = getMedidasCSCIP(
+    d.divisao ?? '',
+    Number(d.area_construida_m2) || 0,
+    Number(d.altura_edificacao_m) || 0
+  ).medidas;
+  if (lista.length === 0) {
+    // fallback: usa só a lista escolhida sem status
+    return (d.medidas_protecao ?? []).map((nome: string) => ({
+      nome,
+      status: 'EXIGIDO' as const
+    }));
+  }
+  const out: { nome: string; status: 'EXIGIDO' | 'CONDICIONAL'; observacao?: string }[] = [];
+  for (const m of lista) {
+    if (m.status === 'EXIGIDO') out.push({ nome: m.nome, status: 'EXIGIDO', observacao: m.observacao });
+    else if (m.status === 'CONDICIONAL' && escolhidas.has(m.nome))
+      out.push({ nome: m.nome, status: 'CONDICIONAL', observacao: m.observacao });
+  }
+  return out;
 }
 
 export async function gerarPdfBlob(d: any): Promise<Blob> {

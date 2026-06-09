@@ -293,35 +293,104 @@ function Etapa5({ calc }: any) {
 }
 
 function Etapa6({ dados, up, calc }: any) {
-  function toggleMedida(m: string) {
+  const medidasCSCIP: { nome: string; status: 'EXIGIDO' | 'CONDICIONAL'; observacao?: string }[] =
+    calc.medidas_cscip || [];
+  const simplificada: boolean = !!calc.cscip_simplificada;
+
+  // Lista de nomes que são EXIGIDOS (sempre marcados, não desmarcáveis)
+  const nomesExigidos = medidasCSCIP
+    .filter((m) => m.status === 'EXIGIDO')
+    .map((m) => m.nome);
+  const nomesCondicionais = medidasCSCIP
+    .filter((m) => m.status === 'CONDICIONAL')
+    .map((m) => m.nome);
+
+  // Carrega/inicializa: garante que TODOS os Exigidos estejam marcados.
+  // Condicionais só se o usuário já marcou anteriormente.
+  useEffect(() => {
+    const atuais = new Set<string>(dados.medidas_protecao || []);
+    let mudou = false;
+    for (const nome of nomesExigidos) {
+      if (!atuais.has(nome)) {
+        atuais.add(nome);
+        mudou = true;
+      }
+    }
+    if (mudou) up('medidas_protecao', Array.from(atuais));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(nomesExigidos)]);
+
+  function toggleCondicional(nome: string) {
     const set = new Set<string>(dados.medidas_protecao || []);
-    set.has(m) ? set.delete(m) : set.add(m);
+    set.has(nome) ? set.delete(nome) : set.add(nome);
     up('medidas_protecao', Array.from(set));
   }
-  const sugeridas = calc.medidas_protecao as string[];
-  const escolhidas: string[] = dados.medidas_protecao?.length ? dados.medidas_protecao : sugeridas;
 
-  // Inicializa as medidas escolhidas com as sugeridas
-  useEffect(() => {
-    if (!dados.medidas_protecao || dados.medidas_protecao.length === 0) {
-      up('medidas_protecao', sugeridas);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const escolhidas = new Set<string>(dados.medidas_protecao || []);
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-bold">Medidas e responsável técnico</h2>
-      <Field label="Medidas de proteção previstas">
-        <div className="space-y-2">
-          {sugeridas.map((m) => (
-            <label key={m} className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={escolhidas.includes(m)} onChange={() => toggleMedida(m)} />
-              <span>{m}</span>
-            </label>
-          ))}
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-xl font-bold">Medidas de segurança contra incêndio</h2>
+        <p className="text-sm text-muted mt-1">
+          Verificador CSCIP/PR baseado em divisão, área e altura. Medidas marcadas como
+          {' '}<strong>Exigido</strong> vão automáticas para o memorial. As
+          {' '}<strong>Condicionais</strong> dependem de análise caso a caso — marque as que se aplicam.
+        </p>
+      </div>
+
+      {medidasCSCIP.length === 0 ? (
+        <div className="rounded-md bg-surface border border-border p-4 text-sm text-muted">
+          Selecione um CNAE e informe área e altura nas etapas anteriores para ver as medidas.
         </div>
-      </Field>
+      ) : (
+        <div className="rounded-md border border-border bg-white">
+          {simplificada && (
+            <div className="px-4 py-2 text-xs bg-[#EAF3DE] text-[#3B6D11] border-b border-border">
+              Enquadramento em tabela simplificada (Tabela 5 do CSCIP/PR).
+            </div>
+          )}
+          <ul className="divide-y divide-border">
+            {medidasCSCIP.map((m) => {
+              const exigido = m.status === 'EXIGIDO';
+              const marcada = escolhidas.has(m.nome) || exigido;
+              return (
+                <li key={m.nome} className="px-4 py-3 flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    checked={marcada}
+                    disabled={exigido}
+                    onChange={() => toggleCondicional(m.nome)}
+                    aria-label={m.nome}
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm text-ink font-medium">{m.nome}</span>
+                      {exigido ? (
+                        <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#FCEBEB] text-[#A32D2D]">
+                          Exigido
+                        </span>
+                      ) : (
+                        <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#FAEEDA] text-[#854F0B]">
+                          Condicional
+                        </span>
+                      )}
+                    </div>
+                    {m.observacao && (
+                      <div className="text-xs text-muted mt-1">{m.observacao}</div>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="px-4 py-2 text-xs text-muted border-t border-border">
+            {nomesExigidos.length} exigida(s) • {nomesCondicionais.length} condicional(is)
+          </div>
+        </div>
+      )}
+
       <div className="grid sm:grid-cols-2 gap-3">
         <Field label="Responsável técnico"><input className="input" value={dados.responsavel_tecnico} onChange={e => up('responsavel_tecnico', e.target.value)} /></Field>
         <Field label="CREA / CAU"><input className="input" value={dados.crea_resp} onChange={e => up('crea_resp', e.target.value)} /></Field>

@@ -3,6 +3,31 @@ import {
   Document, Packer, Paragraph, TextRun, HeadingLevel,
   Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle
 } from 'docx';
+import { getMedidasCSCIP } from './cscip-medidas';
+
+function medidasComStatusDocx(
+  d: any
+): { nome: string; status: 'EXIGIDO' | 'CONDICIONAL'; observacao?: string }[] {
+  const escolhidas = new Set<string>(d.medidas_protecao ?? []);
+  const lista = getMedidasCSCIP(
+    d.divisao ?? '',
+    Number(d.area_construida_m2) || 0,
+    Number(d.altura_edificacao_m) || 0
+  ).medidas;
+  if (lista.length === 0) {
+    return (d.medidas_protecao ?? []).map((nome: string) => ({
+      nome,
+      status: 'EXIGIDO' as const
+    }));
+  }
+  const out: { nome: string; status: 'EXIGIDO' | 'CONDICIONAL'; observacao?: string }[] = [];
+  for (const m of lista) {
+    if (m.status === 'EXIGIDO') out.push({ nome: m.nome, status: 'EXIGIDO', observacao: m.observacao });
+    else if (m.status === 'CONDICIONAL' && escolhidas.has(m.nome))
+      out.push({ nome: m.nome, status: 'CONDICIONAL', observacao: m.observacao });
+  }
+  return out;
+}
 
 function row(k: string, v: any) {
   const val = v == null || v === '' ? '—' : String(v);
@@ -104,10 +129,31 @@ export async function gerarDocxBlob(d: any): Promise<Blob> {
       row('Critério', d.brigadistas_descricao)
     ]),
 
-    h('6. Medidas de proteção'),
-    ...(d.medidas_protecao ?? []).map((m: string) =>
-      new Paragraph({ text: `• ${m}`, spacing: { after: 60 } })
-    ),
+    h('6. Medidas de segurança contra incêndio (CSCIP/PR)'),
+    ...medidasComStatusDocx(d).flatMap((m) => {
+      const tag = m.status === 'EXIGIDO' ? 'Exigido' : 'Condicional';
+      const cor = m.status === 'EXIGIDO' ? 'A32D2D' : '854F0B';
+      const linhas = [
+        new Paragraph({
+          spacing: { after: 30 },
+          children: [
+            new TextRun({ text: `• ${m.nome}  ` }),
+            new TextRun({ text: `[${tag}]`, color: cor, bold: true, size: 16 })
+          ]
+        })
+      ];
+      if (m.observacao) {
+        linhas.push(
+          new Paragraph({
+            spacing: { after: 80 },
+            children: [
+              new TextRun({ text: `   ${m.observacao}`, color: '7A7974', italics: true, size: 16 })
+            ]
+          })
+        );
+      }
+      return linhas;
+    }),
 
     h('7. Responsável técnico'),
     tabela([

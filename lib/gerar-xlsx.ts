@@ -1,5 +1,30 @@
 // Gera planilha XLSX preenchida
 import ExcelJS from 'exceljs';
+import { getMedidasCSCIP } from './cscip-medidas';
+
+function medidasComStatusXlsx(
+  d: any
+): { nome: string; status: 'EXIGIDO' | 'CONDICIONAL'; observacao?: string }[] {
+  const escolhidas = new Set<string>(d.medidas_protecao ?? []);
+  const lista = getMedidasCSCIP(
+    d.divisao ?? '',
+    Number(d.area_construida_m2) || 0,
+    Number(d.altura_edificacao_m) || 0
+  ).medidas;
+  if (lista.length === 0) {
+    return (d.medidas_protecao ?? []).map((nome: string) => ({
+      nome,
+      status: 'EXIGIDO' as const
+    }));
+  }
+  const out: { nome: string; status: 'EXIGIDO' | 'CONDICIONAL'; observacao?: string }[] = [];
+  for (const m of lista) {
+    if (m.status === 'EXIGIDO') out.push({ nome: m.nome, status: 'EXIGIDO', observacao: m.observacao });
+    else if (m.status === 'CONDICIONAL' && escolhidas.has(m.nome))
+      out.push({ nome: m.nome, status: 'CONDICIONAL', observacao: m.observacao });
+  }
+  return out;
+}
 
 export async function gerarXlsxBlob(d: any): Promise<Blob> {
   const wb = new ExcelJS.Workbook();
@@ -89,8 +114,11 @@ export async function gerarXlsxBlob(d: any): Promise<Blob> {
   par('Brigadistas', d.brigadistas_necessarios);
   par('Critério', d.brigadistas_descricao);
 
-  secao('6. Medidas de proteção');
-  (d.medidas_protecao ?? []).forEach((m: string) => par('•', m));
+  secao('6. Medidas de segurança contra incêndio (CSCIP/PR)');
+  medidasComStatusXlsx(d).forEach((m) => {
+    const tag = m.status === 'EXIGIDO' ? 'Exigido' : 'Condicional';
+    par(tag, m.observacao ? `${m.nome} — ${m.observacao}` : m.nome);
+  });
 
   secao('7. Responsável técnico');
   par('Nome', d.responsavel_tecnico);

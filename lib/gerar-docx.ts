@@ -1,7 +1,8 @@
 // Gera o memorial em DOCX usando a lib `docx`.
 import {
   Document, Packer, Paragraph, TextRun, HeadingLevel,
-  Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, PageBreak
+  Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, PageBreak,
+  ImageRun
 } from 'docx';
 import { dimensionarTodos, DATA_SAIDAS, type Pavimento, type DimPavimento } from './saidas-npt011';
 import {
@@ -644,7 +645,47 @@ function secCargaIncendio(d: any): any[] {
 // ============================================================================
 // Seção: Acesso a viaturas
 // ============================================================================
-function secAcessoViaturas(d: any): any[] {
+function figuraDocx(buf: ArrayBuffer | null, titulo: string, fonte: string): any[] {
+  const out: any[] = [
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 200, after: 80 },
+      children: [new TextRun({ text: titulo, size: 18 })]
+    })
+  ];
+  if (buf) {
+    out.push(new Paragraph({
+      alignment: AlignmentType.CENTER,
+      children: [
+        new ImageRun({
+          data: buf,
+          transformation: { width: 380, height: 260 },
+          type: 'jpg'
+        } as any)
+      ]
+    }));
+  }
+  out.push(new Paragraph({
+    alignment: AlignmentType.CENTER,
+    spacing: { after: 160 },
+    children: [new TextRun({ text: fonte, size: 16, color: '7A7974', italics: true })]
+  }));
+  return out;
+}
+
+async function carregarImagemNpt006(arquivo: string): Promise<ArrayBuffer | null> {
+  if (typeof window === 'undefined') return null;
+  try {
+    const url = window.location.origin + '/imagens-npt006/' + arquivo;
+    const r = await fetch(url);
+    if (!r.ok) return null;
+    return await r.arrayBuffer();
+  } catch {
+    return null;
+  }
+}
+
+async function secAcessoViaturas(d: any): Promise<any[]> {
   const av = d.acesso_viaturas || {};
   const out: any[] = [
     h1('Memorial descritivo — Acesso de viaturas'),
@@ -666,6 +707,35 @@ function secAcessoViaturas(d: any): any[] {
       row('Altura do portão (m)', av.altura_portao_m ?? '—')
     ]));
   }
+
+  // Figuras NPT 006
+  const [img1, img2, img3] = await Promise.all([
+    carregarImagemNpt006('01-largura-via.jpg'),
+    carregarImagemNpt006('02-portao-acesso.jpg'),
+    carregarImagemNpt006('03-retorno-edificio.jpg')
+  ]);
+  out.push(...figuraDocx(
+    img1,
+    'Figura 1 — Largura de via de acesso.',
+    'FONTE: NPT 006 — Acesso de viatura na edificação e áreas de risco.'
+  ));
+  out.push(...figuraDocx(
+    img2,
+    'Figura 2 — Largura e altura mínima do portão de acesso.',
+    'FONTE: NPT 006 — Acesso de viatura na edificação e áreas de risco.'
+  ));
+  out.push(...figuraDocx(
+    img3,
+    'Figura 3 — Disposição das vias de acesso e retorno de viaturas.',
+    'FONTE: NPT 006 — Acesso de viatura na edificação e áreas de risco.'
+  ));
+  out.push(p(
+    'Recomenda-se que as vias de acesso com extensão superior a 45,00 m possuam retornos em ' +
+    'formato circular, em "Y" ou em "T", conforme modelos de retornos constantes na NPT 005 — ' +
+    'Segurança contra incêndio urbanística.',
+    { justify: true }
+  ));
+
   out.push(...assinatura(d));
   return out;
 }
@@ -716,8 +786,8 @@ export async function gerarDocxBlob(d: any): Promise<Blob> {
     ...secCargaIncendio(d),
     pageBreak(),
 
-    // PÁGINA 7 — ACESSO A VIATURAS
-    ...secAcessoViaturas(d),
+    // PÁGINA 7 — ACESSO A VIATURAS (com figuras NPT 006)
+    ...(await secAcessoViaturas(d)),
     pageBreak(),
 
     // PÁGINA 8 — TERMO DE SAÍDAS

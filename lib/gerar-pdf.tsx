@@ -1,5 +1,5 @@
 // PDF do Memorial Descritivo CBPR via @react-pdf/renderer
-import { Document, Page, Text, View, StyleSheet, pdf } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Image, pdf } from '@react-pdf/renderer';
 import React from 'react';
 import { getMedidasCSCIP } from './cscip-medidas';
 import { dimensionarTodos, DATA_SAIDAS, type Pavimento, type DimPavimento } from './saidas-npt011';
@@ -58,8 +58,21 @@ const styles = StyleSheet.create({
   // Assinatura padrão
   assinaturaBox: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 40 },
   assinaturaCol: { width: '47%', textAlign: 'center', fontSize: 8 },
-  linha: { borderTop: '1px solid #28251D', paddingTop: 3 }
+  linha: { borderTop: '1px solid #28251D', paddingTop: 3 },
+  // Figuras NPT 006
+  figuraBox: { alignItems: 'center', marginTop: 10, marginBottom: 6 },
+  figuraTitulo: { fontSize: 9, textAlign: 'center', marginBottom: 4 },
+  figuraFonte: { fontSize: 8, textAlign: 'center', color: '#7A7974', marginTop: 4 },
+  figuraImg: { maxWidth: 380, maxHeight: 280, objectFit: 'contain' }
 });
+
+// Resolve URL absoluta para imagens públicas (necessário no browser para @react-pdf/renderer)
+function imgUrl(path: string): string {
+  if (typeof window !== 'undefined' && window.location && window.location.origin) {
+    return window.location.origin + path;
+  }
+  return path;
+}
 
 function Linha({ k, v }: { k: string; v: any }) {
   return (
@@ -248,7 +261,7 @@ export function MemorialPdf({ d }: { d: any }) {
         <Assinatura d={d} />
       </Page>
 
-      {/* PÁGINA 7 — ACESSO A VIATURAS (NPT 006) */}
+      {/* PÁGINA 7 — ACESSO A VIATURAS (NPT 006) — capa + figura 1 */}
       <Page size="A4" style={styles.page}>
         <Text style={styles.h1}>Memorial descritivo — Acesso de viaturas</Text>
         <Linha k="Proprietário" v={d.proprietario} />
@@ -262,12 +275,39 @@ export function MemorialPdf({ d }: { d: any }) {
         <Text style={styles.pJustify}>{textoAcessoViaturas(d)}</Text>
 
         {d.acesso_viaturas && (d.acesso_viaturas.largura_via_m || d.acesso_viaturas.largura_portao_m) ? (
-          <View style={{ marginTop: 8 }}>
+          <View style={{ marginTop: 6 }}>
             <Linha k="Largura da via (m)" v={d.acesso_viaturas.largura_via_m ?? '—'} />
             <Linha k="Largura do portão (m)" v={d.acesso_viaturas.largura_portao_m ?? '—'} />
             <Linha k="Altura do portão (m)" v={d.acesso_viaturas.altura_portao_m ?? '—'} />
           </View>
         ) : null}
+
+        <View style={styles.figuraBox} wrap={false}>
+          <Text style={styles.figuraTitulo}>Figura 1 — Largura de via de acesso.</Text>
+          <Image style={styles.figuraImg} src={imgUrl('/imagens-npt006/01-largura-via.jpg')} />
+          <Text style={styles.figuraFonte}>FONTE: NPT 006 — Acesso de viatura na edificação e áreas de risco.</Text>
+        </View>
+      </Page>
+
+      {/* PÁGINA 7b — Figura 2: portão (perspectiva) */}
+      <Page size="A4" style={styles.page}>
+        <View style={styles.figuraBox} wrap={false}>
+          <Text style={styles.figuraTitulo}>Figura 2 — Largura e altura mínima do portão de acesso.</Text>
+          <Image style={styles.figuraImg} src={imgUrl('/imagens-npt006/02-portao-acesso.jpg')} />
+          <Text style={styles.figuraFonte}>FONTE: NPT 006 — Acesso de viatura na edificação e áreas de risco.</Text>
+        </View>
+
+        <View style={styles.figuraBox} wrap={false}>
+          <Text style={styles.figuraTitulo}>Figura 3 — Disposição das vias de acesso e retorno de viaturas.</Text>
+          <Image style={styles.figuraImg} src={imgUrl('/imagens-npt006/03-retorno-edificio.jpg')} />
+          <Text style={styles.figuraFonte}>FONTE: NPT 006 — Acesso de viatura na edificação e áreas de risco.</Text>
+        </View>
+
+        <Text style={[styles.pJustify, { marginTop: 8 }]}>
+          Recomenda-se que as vias de acesso com extensão superior a 45,00 m possuam retornos em
+          formato circular, em "Y" ou em "T", conforme modelos de retornos constantes na NPT 005
+          — Segurança contra incêndio urbanística.
+        </Text>
 
         <Assinatura d={d} />
       </Page>

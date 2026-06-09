@@ -40,11 +40,23 @@ export type TipoAltura = {
 
 export type RiscoIncendio = 'BAIXO' | 'MEDIO' | 'ALTO';
 
+// CNAE selecionado (uma das possíveis ocupações da edificação)
+export type CnaeSelecionado = {
+  id: string;
+  cnae: string;
+  grupo: string;
+  ocupacao: string;
+  divisao: string;
+  descricao: string;
+  carga_incendio_mj_m2: number;
+};
+
 export type DadosObra = {
   // 1. Dados da obra
   nome_obra: string;
   proprietario: string;
   cpf_cnpj: string;
+  inscricao_imobiliaria?: string;
   endereco: string;
   cidade: string;
   uf: string;
@@ -52,13 +64,16 @@ export type DadosObra = {
   telefone: string;
   email_contato: string;
 
-  // 2. Classificação
+  // 2. Classificação (CNAE principal mantido para retrocompatibilidade)
   cnae: string;
   grupo: string;
   ocupacao: string;
   divisao: string;
   descricao_atividade: string;
   carga_incendio_mj_m2: number;
+  // Lista de ocupações (edificação mista)
+  cnaes?: CnaeSelecionado[];
+  ocupacao_resumo?: string;
 
   // 3. Características
   area_total_m2: number;
@@ -85,6 +100,7 @@ export type DadosObra = {
   // 5. Brigada
   brigadistas_necessarios: number;
   brigadistas_descricao: string;
+  brigada_populacao_ajustada?: number;
 
   // 6. Medidas / responsável
   medidas_protecao: string[];

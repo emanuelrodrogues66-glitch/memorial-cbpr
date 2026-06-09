@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import NovoProjetoButton from './NovoProjetoButton';
 import LogoutButton from './LogoutButton';
+import DuplicarProjetoButton from './DuplicarProjetoButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,21 +58,23 @@ export default async function Dashboard() {
             </div>
           )}
           {projetos?.map((p) => (
-            <Link
+            <div
               key={p.id}
-              href={`/projeto/${p.id}`}
               className="card flex items-center justify-between hover:border-primary transition"
             >
-              <div>
-                <div className="font-semibold text-ink">{p.nome_obra || 'Projeto sem nome'}</div>
+              <Link href={`/projeto/${p.id}`} className="flex-1 min-w-0">
+                <div className="font-semibold text-ink truncate">{p.nome_obra || 'Projeto sem nome'}</div>
                 <div className="text-xs text-muted mt-1">
                   Atualizado em {new Date(p.updated_at).toLocaleString('pt-BR')}
                 </div>
+              </Link>
+              <div className="flex items-center gap-3 ml-3">
+                <span className="text-xs uppercase tracking-wide font-medium text-primary border border-primary/30 rounded-full px-3 py-1">
+                  {p.status}
+                </span>
+                <DuplicarProjetoButton projetoId={p.id} nomeAtual={p.nome_obra || ''} />
               </div>
-              <span className="text-xs uppercase tracking-wide font-medium text-primary border border-primary/30 rounded-full px-3 py-1">
-                {p.status}
-              </span>
-            </Link>
+            </div>
           ))}
         </div>
       </section>

@@ -21,6 +21,15 @@ import {
   formatarData
 } from './textos-padrao';
 import { calcularMediaPonderada, type ItemCargaIncendio } from './carga-incendio';
+import { incluiSecao, type SecaoMemorial } from './secoes-memorial';
+
+// Helper: texto consolidado da ocupação (mista ou simples)
+function ocupacaoTexto(d: any): string {
+  if (d.ocupacao_resumo && String(d.ocupacao_resumo).trim()) return String(d.ocupacao_resumo);
+  const oc = d.ocupacao ?? '';
+  const div = d.divisao ?? '';
+  return div ? `${oc} (${div})` : oc;
+}
 
 // ============================== Helpers de estilo ==============================
 
@@ -56,26 +65,35 @@ function bordasPretas(cells: ExcelJS.Cell[]) {
 
 // ============================== Geração principal ==============================
 
-export async function gerarXlsxBlob(d: any): Promise<Blob> {
+export async function gerarXlsxBlob(d: any, secoes?: SecaoMemorial[]): Promise<Blob> {
   const wb = new ExcelJS.Workbook();
   wb.creator = 'Memorial CBPR';
   wb.created = new Date();
 
-  abaOficio(wb, d);
-  abaClassificacao(wb, d);
-  abaMemorialConstrucao(wb, d);
-  abaInformacoesOperacionais(wb, d);
+  if (incluiSecao(secoes, 'oficio')) abaOficio(wb, d);
+  if (incluiSecao(secoes, 'classificacao')) abaClassificacao(wb, d);
+  if (incluiSecao(secoes, 'memorial_construcao')) abaMemorialConstrucao(wb, d);
+  if (incluiSecao(secoes, 'inf_operacional')) abaInformacoesOperacionais(wb, d);
 
-  const pavs: Pavimento[] = Array.isArray(d.saidas_pavimentos) ? d.saidas_pavimentos : [];
-  if (pavs.length > 0) {
-    addAbaSaidas(wb, pavs);
-  } else {
-    abaSaidasResumo(wb, d);
+  if (incluiSecao(secoes, 'saidas')) {
+    const pavs: Pavimento[] = Array.isArray(d.saidas_pavimentos) ? d.saidas_pavimentos : [];
+    if (pavs.length > 0) {
+      addAbaSaidas(wb, pavs);
+    } else {
+      abaSaidasResumo(wb, d);
+    }
   }
 
-  abaCargaIncendio(wb, d);
-  abaAcessoViaturas(wb, d);
-  abaTermoSaidas(wb, d);
+  if (incluiSecao(secoes, 'carga_incendio')) abaCargaIncendio(wb, d);
+  if (incluiSecao(secoes, 'brigada')) abaBrigada(wb, d);
+  if (incluiSecao(secoes, 'acesso_viaturas')) abaAcessoViaturas(wb, d);
+  if (incluiSecao(secoes, 'termo_saidas')) abaTermoSaidas(wb, d);
+
+  // Garante pelo menos uma aba
+  if (wb.worksheets.length === 0) {
+    const ws = wb.addWorksheet('Memorial');
+    ws.getCell('B2').value = 'Nenhuma seção selecionada.';
+  }
 
   const buffer = await wb.xlsx.writeBuffer();
   return new Blob([buffer], {
@@ -131,6 +149,7 @@ function abaOficio(wb: ExcelJS.Workbook, d: any) {
     ['Nome da obra', d.nome_obra],
     ['Proprietário', d.proprietario],
     ['CPF / CNPJ', d.cpf_cnpj],
+    ['Inscrição Imobiliária', d.inscricao_imobiliaria],
     ['Endereço', d.endereco],
     ['Cidade / UF', `${d.cidade ?? ''} / ${d.uf ?? ''}`],
     ['CEP', d.cep],
@@ -182,6 +201,7 @@ function abaClassificacao(wb: ExcelJS.Workbook, d: any) {
     ['Nome da obra', d.nome_obra],
     ['Proprietário', d.proprietario],
     ['CPF / CNPJ', d.cpf_cnpj],
+    ['Inscrição Imobiliária', d.inscricao_imobiliaria],
     ['Endereço', d.endereco],
     ['Cidade / UF', `${d.cidade ?? ''} / ${d.uf ?? ''}`],
     ['CEP', d.cep]
@@ -190,17 +210,27 @@ function abaClassificacao(wb: ExcelJS.Workbook, d: any) {
 
   // 2.2 — Classificação geral (CNAE / ocupação / risco)
   r = subtitulo(ws, r, '2. Classificação geral');
-  const geral: [string, any][] = [
-    ['CNAE', d.cnae],
-    ['Atividade', d.descricao_atividade],
-    ['Grupo / Ocupação', `${d.grupo ?? ''} • ${d.ocupacao ?? ''}`],
-    ['Divisão', d.divisao],
-    [
-      'Carga de incêndio',
-      d.carga_incendio_mj_m2 ? `${d.carga_incendio_mj_m2} MJ/m²` : '—'
-    ],
-    ['Risco de incêndio', d.risco_incendio]
-  ];
+  const cnaes = Array.isArray(d.cnaes) ? d.cnaes : [];
+  const geral: [string, any][] = [];
+  if (cnaes.length > 1) {
+    geral.push(['Ocupação consolidada', ocupacaoTexto(d)]);
+    cnaes.forEach((c: any, i: number) => {
+      geral.push([
+        `CNAE ${i + 1}`,
+        `${c.cnae || '—'} • ${c.ocupacao || '—'} (${c.divisao || '—'})`
+      ]);
+    });
+  } else {
+    geral.push(['CNAE', d.cnae]);
+    geral.push(['Atividade', d.descricao_atividade]);
+    geral.push(['Ocupação', ocupacaoTexto(d)]);
+    geral.push(['Grupo', d.grupo]);
+  }
+  geral.push([
+    'Carga de incêndio',
+    d.carga_incendio_mj_m2 ? `${d.carga_incendio_mj_m2} MJ/m²` : '—'
+  ]);
+  geral.push(['Risco de incêndio', d.risco_incendio]);
   r = listaPares(ws, r, geral);
 
   // 2.3 — Classificação física
@@ -749,6 +779,81 @@ function abaCargaIncendio(wb: ExcelJS.Workbook, d: any) {
   obs.alignment = { wrapText: true };
   ws.mergeCells(r, 2, r, 7);
   r += 2;
+
+  assinaturaXlsx(ws, r, d);
+}
+
+// ============================== Brigada de incêndio (NPT 017) ==============================
+
+function abaBrigada(wb: ExcelJS.Workbook, d: any) {
+  const ws = wb.addWorksheet('Brigada', {
+    properties: { defaultRowHeight: 18 },
+    pageSetup: { paperSize: 9, orientation: 'portrait' }
+  });
+  ws.getColumn(1).width = 3;
+  ws.getColumn(2).width = 38;
+  ws.getColumn(3).width = 55;
+
+  let r = 2;
+  const t = ws.getCell(r, 2);
+  t.value = 'MEMORIAL DE CÁLCULO — BRIGADA DE INCÊNDIO';
+  t.font = { bold: true, size: 14, color: { argb: COR_TITULO } };
+  ws.mergeCells(r, 2, r, 3);
+  r++;
+  const sub = ws.getCell(r, 2);
+  sub.value = 'NPT 017 / CSCIP-PR — item 6.2';
+  sub.font = { italic: true, color: { argb: 'FF7A7974' }, size: 10 };
+  ws.mergeCells(r, 2, r, 3);
+  r += 2;
+
+  r = subtitulo(ws, r, '1. Dados de entrada');
+  const popFixa = Number(d.info_operacional?.populacao_fixa) || 0;
+  const popFlut = Number(d.info_operacional?.populacao_flutuante) || 0;
+  const popTotal = popFixa + popFlut;
+  const popAjustada = Number(d.brigada_populacao_ajustada) || popTotal;
+  const grupo = String(d.grupo || '').toUpperCase().trim();
+  const isGrupoF = grupo.startsWith('F');
+  const brigadistas = Number(d.numero_brigadistas) || Math.max(1, Math.ceil(popAjustada / 200));
+
+  r = listaPares(ws, r, [
+    ['Ocupação', ocupacaoTexto(d)],
+    ['Grupo', d.grupo],
+    ['População fixa', popFixa],
+    ['População flutuante', popFlut],
+    ['População total', popTotal],
+    ['Acréscimo Grupo F (+30%)', isGrupoF ? 'Sim' : 'Não'],
+    ['População ajustada (cálculo)', popAjustada]
+  ]);
+
+  r = subtitulo(ws, r, '2. Critério (NPT 017 item 6.2)');
+  const crit = ws.getCell(r, 2);
+  crit.value =
+    '1 brigadista orgânico para cada 200 pessoas, considerando-se o número inteiro imediatamente superior. ' +
+    'Para edificações do Grupo F (locais de reunião de público), aplica-se acréscimo de 30% sobre a população total.';
+  crit.alignment = { wrapText: true };
+  ws.mergeCells(r, 2, r, 3);
+  ws.getRow(r).height = 56;
+  r += 2;
+
+  r = subtitulo(ws, r, '3. Cálculo');
+  const calcTxt = d.brigadistas_descricao
+    ? String(d.brigadistas_descricao)
+    : `População ajustada (${popAjustada}) ÷ 200 = ${(popAjustada / 200).toFixed(2)} → arredondado para cima = ${brigadistas} brigadista(s).`;
+  const cc = ws.getCell(r, 2);
+  cc.value = calcTxt;
+  cc.alignment = { wrapText: true, vertical: 'top' };
+  ws.mergeCells(r, 2, r, 3);
+  ws.getRow(r).height = 70;
+  r += 2;
+
+  const res = ws.getCell(r, 2);
+  res.value = `RESULTADO: ${brigadistas} brigadista(s)`;
+  res.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+  res.alignment = { horizontal: 'center', vertical: 'middle' };
+  res.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COR_TITULO } };
+  ws.mergeCells(r, 2, r, 3);
+  ws.getRow(r).height = 26;
+  r += 3;
 
   assinaturaXlsx(ws, r, d);
 }

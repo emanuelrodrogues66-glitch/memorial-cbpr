@@ -17,6 +17,14 @@ import {
   textoTermoSaidas,
   formatarData
 } from './textos-padrao';
+import { incluiSecao, type SecaoMemorial } from './secoes-memorial';
+
+function ocupacaoTexto(d: any): string {
+  if (d.ocupacao_resumo && String(d.ocupacao_resumo).trim()) return String(d.ocupacao_resumo);
+  const oc = d.ocupacao ?? '';
+  const div = d.divisao ?? '';
+  return div ? `${oc} (${div})` : oc;
+}
 
 const styles = StyleSheet.create({
   page: { padding: 36, fontSize: 10, fontFamily: 'Helvetica', color: '#28251D' },
@@ -105,11 +113,13 @@ function Assinatura({ d, local }: { d: any; local?: string }) {
   );
 }
 
-export function MemorialPdf({ d }: { d: any }) {
+// ============================================================================
+// PÁGINAS modulares (cada uma retorna <Page> ou null)
+// ============================================================================
+
+function PageOficio({ d }: { d: any }) {
   return (
-    <Document>
-      {/* PÁGINA 1 — OFÍCIO DE APRESENTAÇÃO */}
-      <Page size="A4" style={styles.page}>
+    <Page size="A4" style={styles.page}>
         <View style={styles.capa}>
           <Text style={styles.h1}>OFÍCIO DE APRESENTAÇÃO DO PTPID</Text>
           <Text style={styles.small}>
@@ -139,9 +149,10 @@ export function MemorialPdf({ d }: { d: any }) {
           <Linha k="Obra" v={d.nome_obra} />
           <Linha k="Proprietário" v={d.proprietario} />
           <Linha k="CPF / CNPJ" v={d.cpf_cnpj} />
+          <Linha k="Inscrição Imobiliária" v={d.inscricao_imobiliaria} />
           <Linha k="Endereço" v={d.endereco} />
           <Linha k="Cidade / UF" v={`${d.cidade ?? ''} / ${d.uf ?? ''}`} />
-          <Linha k="Ocupação" v={`${d.ocupacao ?? ''} (${d.divisao ?? ''})`} />
+          <Linha k="Ocupação" v={ocupacaoTexto(d)} />
           <Linha k="Área total" v={d.area_total_m2 ? `${d.area_total_m2} m²` : '—'} />
           <Linha k="Área construída" v={d.area_construida_m2 ? `${d.area_construida_m2} m²` : '—'} />
         </View>
@@ -153,8 +164,12 @@ export function MemorialPdf({ d }: { d: any }) {
 
         <Assinatura d={d} />
       </Page>
+  );
+}
 
-      {/* PÁGINA 2 — CLASSIFICAÇÃO GERAL + FÍSICA + QUADRO DE MEDIDAS (mesmo tópico) */}
+function PageClassificacao({ d }: { d: any }) {
+  const cnaes: any[] = Array.isArray(d.cnaes) ? d.cnaes : [];
+  return (
       <Page size="A4" style={styles.page}>
         <Text style={styles.h1}>Classificação da edificação e medidas de segurança</Text>
         <Text style={styles.small}>
@@ -170,10 +185,14 @@ export function MemorialPdf({ d }: { d: any }) {
         <Linha k="Cidade / UF" v={`${d.cidade ?? ''} / ${d.uf ?? ''}`} />
 
         <Text style={styles.h2}>2. Classificação geral (CNAE / CSCIP)</Text>
-        <Linha k="CNAE" v={d.cnae} />
+        <Linha k="CNAE principal" v={d.cnae} />
         <Linha k="Atividade" v={d.descricao_atividade} />
         <Linha k="Grupo / Ocupação" v={`${d.grupo} • ${d.ocupacao}`} />
         <Linha k="Divisão" v={d.divisao} />
+        <Linha k="Ocupação consolidada" v={ocupacaoTexto(d)} />
+        {cnaes.length > 1 && cnaes.map((c: any, i: number) => (
+          <Linha key={i} k={`CNAE ${i + 1}`} v={`${c.cnae} • ${c.divisao} • ${c.descricao}`} />
+        ))}
         <Linha k="Carga de incêndio" v={d.carga_incendio_mj_m2 ? `${Number(d.carga_incendio_mj_m2).toFixed(2)} MJ/m²` : '—'} />
         <Linha k="Risco" v={d.risco_incendio} />
 
@@ -207,15 +226,18 @@ export function MemorialPdf({ d }: { d: any }) {
           );
         })}
       </Page>
+  );
+}
 
-      {/* PÁGINA 3 — MEMORIAL BÁSICO DE CONSTRUÇÃO */}
+function PageMemorialConstrucao({ d }: { d: any }) {
+  return (
       <Page size="A4" style={styles.page}>
         <Text style={styles.h1}>Memorial básico de construção</Text>
         <Linha k="Endereço" v={d.endereco} />
         <Linha k="Município" v={`${d.cidade ?? ''}-${d.uf ?? ''}`} />
         <Linha k="Proprietário" v={d.proprietario} />
         <Linha k="Obra" v={d.nome_obra} />
-        <Linha k="Ocupação" v={`${d.ocupacao ?? ''} (${d.divisao ?? ''})`} />
+        <Linha k="Ocupação" v={ocupacaoTexto(d)} />
 
         <Text style={styles.h3}>1. ESTRUTURAS</Text>
         <Text style={styles.pJustify}>{textoEstruturas(d)}</Text>
@@ -240,35 +262,92 @@ export function MemorialPdf({ d }: { d: any }) {
 
         <Assinatura d={d} />
       </Page>
+  );
+}
 
-      {/* PÁGINA 4 — PLANILHA DE INFORMAÇÕES OPERACIONAIS */}
+function PageInfoOperacional({ d }: { d: any }) {
+  return (
       <Page size="A4" style={styles.page}>
         <Text style={styles.h1}>Planilha de informações operacionais</Text>
         {renderInfoOperacional(d)}
         <Assinatura d={d} />
       </Page>
+  );
+}
 
-      {/* PÁGINA 5 — MEMORIAL DE SAÍDAS (NPT 011) */}
+function PageSaidas({ d }: { d: any }) {
+  return (
       <Page size="A4" style={styles.page}>
         <Text style={styles.h1}>Memorial de saídas de emergência (NPT 011)</Text>
         {renderSaidasPdf(d)}
       </Page>
+  );
+}
 
-      {/* PÁGINA 6 — MEMORIAL DE CÁLCULO DA CARGA DE INCÊNDIO */}
+function PageCargaIncendio({ d }: { d: any }) {
+  return (
       <Page size="A4" style={styles.page}>
         <Text style={styles.h1}>Memorial de cálculo de carga de incêndio</Text>
         {renderCargaIncendio(d)}
         <Assinatura d={d} />
       </Page>
+  );
+}
 
-      {/* PÁGINA 7 — ACESSO A VIATURAS (NPT 006) — capa + figura 1 */}
+function PageBrigada({ d }: { d: any }) {
+  const grupo = (d.grupo || '').toString().toUpperCase().trim();
+  const isF = grupo.startsWith('F');
+  const popOriginal = Number(d.populacao_calculada) || 0;
+  const popAjustada = Number(d.brigada_populacao_ajustada) || popOriginal;
+  const brig = Number(d.brigadistas_necessarios) || 0;
+  return (
+      <Page size="A4" style={styles.page}>
+        <Text style={styles.h1}>Memorial de cálculo da brigada de incêndio</Text>
+        <Text style={[styles.pJustify, { marginTop: 8 }]}>
+          Item 6.2 da NPT 017: a composição da brigada de incêndio será determinada pela
+          população potencialmente exposta, conforme Tabela 1 da NPT 011, na proporção de
+          1 brigadista orgânico para cada 200 (duzentas) pessoas, considerando-se o número
+          inteiro imediatamente superior.
+        </Text>
+        <Text style={styles.pJustify}>
+          {isF
+            ? 'Quando se tratar do Grupo F (locais de reunião de público), a população considerada será acrescida em 30% antes da divisão por 200.'
+            : 'A ocupação não pertence ao Grupo F; portanto não se aplica o acréscimo de 30% sobre a população.'}
+        </Text>
+
+        <Text style={styles.h2}>Dados de entrada</Text>
+        <Linha k="Ocupação" v={ocupacaoTexto(d)} />
+        <Linha k="Grupo" v={d.grupo} />
+        <Linha k="População potencialmente exposta" v={`${popOriginal} pessoa(s)`} />
+        <Linha k="Acréscimo Grupo F (30%)" v={isF ? 'Sim' : 'Não'} />
+        <Linha k="População considerada" v={`${popAjustada} pessoa(s)`} />
+
+        <Text style={styles.h2}>Cálculo</Text>
+        <Text style={styles.pJustify}>
+          {isF
+            ? `${popOriginal} × 1,30 = ${popAjustada} pessoa(s) → ${popAjustada} ÷ 200 = ${(popAjustada / 200).toFixed(2)} → ${brig} brigadista(s).`
+            : `${popAjustada} ÷ 200 = ${(popAjustada / 200).toFixed(2)} → ${brig} brigadista(s).`}
+        </Text>
+        <Linha k="Resultado" v={`${brig} brigadista(s) treinado(s)`} />
+        <Linha k="Critério NPT 017" v="1 brigadista a cada 200 pessoas (arredondamento para cima)" />
+        <Text style={[styles.small, { marginTop: 8 }]}>
+          Nota: com base no cálculo foi considerado 1 brigadista a cada 200 pessoas.
+        </Text>
+        <Assinatura d={d} />
+      </Page>
+  );
+}
+
+function PageAcessoViaturas({ d }: { d: any }) {
+  return (
+    <>
       <Page size="A4" style={styles.page}>
         <Text style={styles.h1}>Memorial descritivo — Acesso de viaturas</Text>
         <Linha k="Proprietário" v={d.proprietario} />
         <Linha k="Logradouro" v={d.endereco} />
         <Linha k="Cidade" v={d.cidade} />
         <Linha k="Área total" v={d.area_total_m2 ? `${d.area_total_m2} m²` : '—'} />
-        <Linha k="Descrição da obra" v={`${d.ocupacao ?? ''} (${d.divisao ?? ''})`} />
+        <Linha k="Descrição da obra" v={ocupacaoTexto(d)} />
         <Linha k="Responsável técnico" v={`${d.responsavel_tecnico ?? ''} ${d.crea_resp ?? ''}`} />
 
         <Text style={styles.h2}>1. Acesso de viaturas na edificação e áreas de risco</Text>
@@ -311,8 +390,12 @@ export function MemorialPdf({ d }: { d: any }) {
 
         <Assinatura d={d} />
       </Page>
+    </>
+  );
+}
 
-      {/* PÁGINA 8 — TERMO DE RESPONSABILIDADE DAS SAÍDAS DE EMERGÊNCIA */}
+function PageTermoSaidas({ d }: { d: any }) {
+  return (
       <Page size="A4" style={styles.page}>
         <Text style={styles.h1}>Termo de responsabilidade das saídas de emergência</Text>
         <Text style={[styles.pJustify, { marginTop: 18 }]}>{textoTermoSaidas(d)}</Text>
@@ -322,6 +405,22 @@ export function MemorialPdf({ d }: { d: any }) {
         </Text>
         <Assinatura d={d} />
       </Page>
+  );
+}
+
+export function MemorialPdf({ d, secoes }: { d: any; secoes?: SecaoMemorial[] }) {
+  const inc = (key: SecaoMemorial) => incluiSecao(secoes, key);
+  return (
+    <Document>
+      {inc('oficio') && <PageOficio d={d} />}
+      {inc('classificacao') && <PageClassificacao d={d} />}
+      {inc('memorial_construcao') && <PageMemorialConstrucao d={d} />}
+      {inc('inf_operacional') && <PageInfoOperacional d={d} />}
+      {inc('saidas') && <PageSaidas d={d} />}
+      {inc('carga_incendio') && <PageCargaIncendio d={d} />}
+      {inc('brigada') && <PageBrigada d={d} />}
+      {inc('acesso_viaturas') && <PageAcessoViaturas d={d} />}
+      {inc('termo_saidas') && <PageTermoSaidas d={d} />}
     </Document>
   );
 }
@@ -348,7 +447,7 @@ function renderInfoOperacional(d: any) {
     <>
       <Text style={styles.h3}>1. Informações gerais</Text>
       <Linha k="1.1 Localização" v={d.endereco} />
-      <Linha k="1.2 Ocupação" v={`${d.ocupacao ?? ''} (${d.divisao ?? ''})`} />
+      <Linha k="1.2 Ocupação" v={ocupacaoTexto(d)} />
       <Linha k="1.3 Área" v={d.area_construida_m2 ? `${d.area_construida_m2} m²` : '—'} />
       <Linha k="1.4 Construção" v={io.tipo_estrutura || d.descricao_atividade} />
       <Linha k="1.4.2 Acabamento das paredes" v={io.acabamento_paredes} />
@@ -404,7 +503,7 @@ function renderCargaIncendio(d: any) {
           ocupação principal da edificação.
         </Text>
         <View style={{ marginTop: 8 }}>
-          <Linha k="Ocupação principal" v={`${d.ocupacao ?? ''} (${d.divisao ?? ''})`} />
+          <Linha k="Ocupação principal" v={ocupacaoTexto(d)} />
           <Linha k="Carga de incêndio adotada" v={`${Number(d.carga_incendio_mj_m2 || 0).toFixed(2)} MJ/m²`} />
           <Linha k="Risco predominante" v={d.risco_incendio} />
         </View>
@@ -568,6 +667,6 @@ function popDesc(divisao: string): string {
   return DATA_SAIDAS[divisao]?.pop ?? '—';
 }
 
-export async function gerarPdfBlob(d: any): Promise<Blob> {
-  return await pdf(<MemorialPdf d={d} />).toBlob();
+export async function gerarPdfBlob(d: any, secoes?: SecaoMemorial[]): Promise<Blob> {
+  return await pdf(<MemorialPdf d={d} secoes={secoes} />).toBlob();
 }

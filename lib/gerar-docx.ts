@@ -19,6 +19,15 @@ import {
   textoTermoSaidas,
   formatarData
 } from './textos-padrao';
+import { incluiSecao, type SecaoMemorial } from './secoes-memorial';
+
+// Texto consolidado da ocupação (mista ou simples)
+function ocupacaoTexto(d: any): string {
+  if (d.ocupacao_resumo && String(d.ocupacao_resumo).trim()) return String(d.ocupacao_resumo);
+  const oc = d.ocupacao ?? '';
+  const div = d.divisao ?? '';
+  return div ? `${oc} (${div})` : oc;
+}
 
 // ============================================================================
 // Helpers
@@ -185,9 +194,10 @@ function secOficio(d: any): any[] {
       row('Obra', d.nome_obra),
       row('Proprietário', d.proprietario),
       row('CPF / CNPJ', d.cpf_cnpj),
+      row('Inscrição Imobiliária', d.inscricao_imobiliaria),
       row('Endereço', d.endereco),
       row('Cidade / UF', `${d.cidade ?? ''} / ${d.uf ?? ''}`),
-      row('Ocupação', `${d.ocupacao ?? ''} (${d.divisao ?? ''})`),
+      row('Ocupação', ocupacaoTexto(d)),
       row('Área total', d.area_total_m2 ? `${d.area_total_m2} m²` : '—'),
       row('Área construída', d.area_construida_m2 ? `${d.area_construida_m2} m²` : '—')
     ]),
@@ -253,10 +263,14 @@ function secClassificacaoEMedidas(d: any): any[] {
 
     h('2. Classificação geral (CNAE / CSCIP)'),
     tabela([
-      row('CNAE', d.cnae),
+      row('CNAE principal', d.cnae),
       row('Atividade', d.descricao_atividade),
       row('Grupo / Ocupação', `${d.grupo ?? ''} • ${d.ocupacao ?? ''}`),
       row('Divisão', d.divisao),
+      row('Ocupação consolidada', ocupacaoTexto(d)),
+      ...((Array.isArray(d.cnaes) && d.cnaes.length > 1)
+        ? d.cnaes.map((c: any, i: number) => row(`CNAE ${i + 1}`, `${c.cnae} • ${c.divisao} • ${c.descricao}`))
+        : []),
       row('Carga de incêndio', d.carga_incendio_mj_m2 ? `${Number(d.carga_incendio_mj_m2).toFixed(2)} MJ/m²` : '—'),
       row('Risco', d.risco_incendio)
     ]),
@@ -288,7 +302,7 @@ function secMemorialConstrucao(d: any): any[] {
       row('Município', `${d.cidade ?? ''}-${d.uf ?? ''}`),
       row('Proprietário', d.proprietario),
       row('Obra', d.nome_obra),
-      row('Ocupação', `${d.ocupacao ?? ''} (${d.divisao ?? ''})`)
+      row('Ocupação', ocupacaoTexto(d))
     ]),
     h3('1. ESTRUTURAS'),
     p(textoEstruturas(d), { justify: true }),
@@ -332,7 +346,7 @@ function secInfoOperacional(d: any): any[] {
     h3('1. Informações gerais'),
     tabela([
       row('1.1 Localização', d.endereco),
-      row('1.2 Ocupação', `${d.ocupacao ?? ''} (${d.divisao ?? ''})`),
+      row('1.2 Ocupação', ocupacaoTexto(d)),
       row('1.3 Área', d.area_construida_m2 ? `${d.area_construida_m2} m²` : '—'),
       row('1.4 Construção', io.tipo_estrutura || d.descricao_atividade),
       row('1.4.2 Acabamento das paredes', io.acabamento_paredes),
@@ -558,7 +572,7 @@ function secCargaIncendio(d: any): any[] {
       { justify: true }
     ));
     out.push(tabela([
-      row('Ocupação principal', `${d.ocupacao ?? ''} (${d.divisao ?? ''})`),
+      row('Ocupação principal', ocupacaoTexto(d)),
       row('Carga de incêndio adotada', `${Number(d.carga_incendio_mj_m2 || 0).toFixed(2)} MJ/m²`),
       row('Risco predominante', d.risco_incendio)
     ]));
@@ -694,7 +708,7 @@ async function secAcessoViaturas(d: any): Promise<any[]> {
       row('Logradouro', d.endereco),
       row('Cidade', d.cidade),
       row('Área total', d.area_total_m2 ? `${d.area_total_m2} m²` : '—'),
-      row('Descrição da obra', `${d.ocupacao ?? ''} (${d.divisao ?? ''})`),
+      row('Descrição da obra', ocupacaoTexto(d)),
       row('Responsável técnico', `${d.responsavel_tecnico ?? ''} ${d.crea_resp ?? ''}`)
     ]),
     h3('1. Acesso de viaturas na edificação e áreas de risco'),
@@ -741,6 +755,55 @@ async function secAcessoViaturas(d: any): Promise<any[]> {
 }
 
 // ============================================================================
+// Seção: Brigada de incêndio (NPT 017)
+// ============================================================================
+function secBrigada(d: any): any[] {
+  const grupo = (d.grupo || '').toString().toUpperCase().trim();
+  const isF = grupo.startsWith('F');
+  const popOriginal = Number(d.populacao_calculada) || 0;
+  const popAjustada = Number(d.brigada_populacao_ajustada) || popOriginal;
+  const brig = Number(d.brigadistas_necessarios) || 0;
+  return [
+    h1('Memorial de cálculo da brigada de incêndio'),
+    p(
+      'Item 6.2 da NPT 017: a composição da brigada de incêndio será determinada pela população ' +
+      'potencialmente exposta, conforme Tabela 1 da NPT 011, na proporção de 1 brigadista orgânico ' +
+      'para cada 200 (duzentas) pessoas, considerando-se o número inteiro imediatamente superior.',
+      { justify: true }
+    ),
+    p(
+      isF
+        ? 'Quando se tratar do Grupo F (locais de reunião de público), a população considerada será ' +
+          'acrescida em 30% antes da divisão por 200.'
+        : 'A ocupação não pertence ao Grupo F; portanto não se aplica o acréscimo de 30% sobre a população.',
+      { justify: true }
+    ),
+    h3('Dados de entrada'),
+    tabela([
+      row('Ocupação', ocupacaoTexto(d)),
+      row('Grupo', d.grupo),
+      row('População potencialmente exposta', `${popOriginal} pessoa(s)`),
+      row('Acréscimo Grupo F (30%)', isF ? 'Sim' : 'Não'),
+      row('População considerada', `${popAjustada} pessoa(s)`)
+    ]),
+    h3('Cálculo'),
+    p(
+      isF
+        ? `${popOriginal} × 1,30 = ${popAjustada} pessoa(s) → ${popAjustada} ÷ 200 = ${(popAjustada / 200).toFixed(2)} ` +
+          `→ ${brig} brigadista(s).`
+        : `${popAjustada} ÷ 200 = ${(popAjustada / 200).toFixed(2)} → ${brig} brigadista(s).`,
+      { justify: true }
+    ),
+    tabela([
+      row('Resultado', `${brig} brigadista(s) treinado(s)`),
+      row('Critério NPT 017', '1 brigadista a cada 200 pessoas (arredondamento para cima)')
+    ]),
+    p('Nota: com base no cálculo foi considerado 1 brigadista a cada 200 pessoas.', { italic: true }),
+    ...assinatura(d)
+  ];
+}
+
+// ============================================================================
 // Seção: Termo de saídas de emergência
 // ============================================================================
 function secTermoSaidas(d: any): any[] {
@@ -759,40 +822,29 @@ function secTermoSaidas(d: any): any[] {
 // ============================================================================
 // Função principal de geração
 // ============================================================================
-export async function gerarDocxBlob(d: any): Promise<Blob> {
-  const children: any[] = [
-    // PÁGINA 1 — OFÍCIO
-    ...secOficio(d),
-    pageBreak(),
+export async function gerarDocxBlob(d: any, secoes?: SecaoMemorial[]): Promise<Blob> {
+  const children: any[] = [];
+  const blocos: { key: SecaoMemorial; els: any[] }[] = [];
 
-    // PÁGINA 2 — CLASSIFICAÇÃO + MEDIDAS (mesmo tópico)
-    ...secClassificacaoEMedidas(d),
-    pageBreak(),
+  if (incluiSecao(secoes, 'oficio')) blocos.push({ key: 'oficio', els: secOficio(d) });
+  if (incluiSecao(secoes, 'classificacao')) blocos.push({ key: 'classificacao', els: secClassificacaoEMedidas(d) });
+  if (incluiSecao(secoes, 'memorial_construcao')) blocos.push({ key: 'memorial_construcao', els: secMemorialConstrucao(d) });
+  if (incluiSecao(secoes, 'inf_operacional')) blocos.push({ key: 'inf_operacional', els: secInfoOperacional(d) });
+  if (incluiSecao(secoes, 'saidas')) {
+    blocos.push({
+      key: 'saidas',
+      els: [h1('Memorial de saídas de emergência (NPT 011)'), ...renderSaidasDocx(d)]
+    });
+  }
+  if (incluiSecao(secoes, 'carga_incendio')) blocos.push({ key: 'carga_incendio', els: secCargaIncendio(d) });
+  if (incluiSecao(secoes, 'brigada')) blocos.push({ key: 'brigada', els: secBrigada(d) });
+  if (incluiSecao(secoes, 'acesso_viaturas')) blocos.push({ key: 'acesso_viaturas', els: await secAcessoViaturas(d) });
+  if (incluiSecao(secoes, 'termo_saidas')) blocos.push({ key: 'termo_saidas', els: secTermoSaidas(d) });
 
-    // PÁGINA 3 — MEMORIAL BÁSICO DE CONSTRUÇÃO
-    ...secMemorialConstrucao(d),
-    pageBreak(),
-
-    // PÁGINA 4 — INFORMAÇÕES OPERACIONAIS
-    ...secInfoOperacional(d),
-    pageBreak(),
-
-    // PÁGINA 5 — SAÍDAS DE EMERGÊNCIA (NPT 011)
-    h1('Memorial de saídas de emergência (NPT 011)'),
-    ...renderSaidasDocx(d),
-    pageBreak(),
-
-    // PÁGINA 6 — CARGA DE INCÊNDIO
-    ...secCargaIncendio(d),
-    pageBreak(),
-
-    // PÁGINA 7 — ACESSO A VIATURAS (com figuras NPT 006)
-    ...(await secAcessoViaturas(d)),
-    pageBreak(),
-
-    // PÁGINA 8 — TERMO DE SAÍDAS
-    ...secTermoSaidas(d)
-  ];
+  blocos.forEach((b, i) => {
+    children.push(...b.els);
+    if (i < blocos.length - 1) children.push(pageBreak());
+  });
 
   if (d.observacoes) {
     children.push(pageBreak());

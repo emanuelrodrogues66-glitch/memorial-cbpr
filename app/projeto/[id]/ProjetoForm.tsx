@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { buscarCnae, calcular, getCnae } from '@/lib/calculos';
-import type { CnaeRow } from '@/lib/types';
+import type { CnaeRow, CnaeSelecionado } from '@/lib/types';
 import {
   DATA_SAIDAS,
   DIVS_AGRUPADAS,
@@ -45,10 +45,12 @@ export default function ProjetoForm({ projeto, profile }: { projeto: any; profil
     telefone: projeto.dados?.telefone ?? profile?.telefone ?? '',
     email_contato: projeto.dados?.email_contato ?? profile?.email ?? '',
     cnae: projeto.dados?.cnae ?? '',
+    cnaes: projeto.dados?.cnaes ?? [],
     grupo: projeto.dados?.grupo ?? '',
     ocupacao: projeto.dados?.ocupacao ?? '',
     divisao: projeto.dados?.divisao ?? '',
     descricao_atividade: projeto.dados?.descricao_atividade ?? '',
+    inscricao_imobiliaria: projeto.dados?.inscricao_imobiliaria ?? '',
     carga_incendio_mj_m2: projeto.dados?.carga_incendio_mj_m2 ?? 0,
     area_total_m2: projeto.dados?.area_total_m2 ?? 0,
     area_construida_m2: projeto.dados?.area_construida_m2 ?? 0,
@@ -195,6 +197,7 @@ function Etapa1({ dados, up }: any) {
         <Field label="Nome da obra"><input className="input" value={dados.nome_obra} onChange={e => up('nome_obra', e.target.value)} /></Field>
         <Field label="Proprietário / Razão Social"><input className="input" value={dados.proprietario} onChange={e => up('proprietario', e.target.value)} /></Field>
         <Field label="CPF / CNPJ"><input className="input" value={dados.cpf_cnpj} onChange={e => up('cpf_cnpj', e.target.value)} /></Field>
+        <Field label="Inscrição Imobiliária"><input className="input" value={dados.inscricao_imobiliaria} onChange={e => up('inscricao_imobiliaria', e.target.value)} /></Field>
         <Field label="Telefone"><input className="input" value={dados.telefone} onChange={e => up('telefone', e.target.value)} /></Field>
         <Field label="E-mail de contato"><input type="email" className="input" value={dados.email_contato} onChange={e => up('email_contato', e.target.value)} /></Field>
         <Field label="Endereço"><input className="input" value={dados.endereco} onChange={e => up('endereco', e.target.value)} /></Field>
@@ -214,30 +217,91 @@ function Etapa2({ dados, up, calc }: any) {
     return () => clearTimeout(t);
   }, [busca]);
 
-  function escolher(r: CnaeRow) {
-    up('cnae', r.cnae);
-    up('grupo', r.grupo);
-    up('ocupacao', r.ocupacao);
-    up('divisao', r.divisao);
-    up('descricao_atividade', r.descricao);
-    up('carga_incendio_mj_m2', r.carga_incendio_mj_m2 ?? 0);
-    setBusca(''); setResultados([]);
+  // Lista de CNAEs/ocupações selecionados (suporte a edificação mista)
+  const cnaesSel: CnaeSelecionado[] = Array.isArray(dados.cnaes) ? dados.cnaes : [];
+
+  function sincronizarLegado(lista: CnaeSelecionado[]) {
+    // Mantém os campos legados (dados.cnae, grupo, ocupacao, divisao…)
+    // sincronizados com o primeiro CNAE selecionado para compatibilidade.
+    const primeiro = lista[0];
+    if (primeiro) {
+      up('cnae', primeiro.cnae);
+      up('grupo', primeiro.grupo);
+      up('ocupacao', primeiro.ocupacao);
+      up('divisao', primeiro.divisao);
+      up('descricao_atividade', primeiro.descricao);
+      up('carga_incendio_mj_m2', primeiro.carga_incendio_mj_m2 ?? 0);
+    } else {
+      up('cnae', '');
+      up('grupo', '');
+      up('ocupacao', '');
+      up('divisao', '');
+      up('descricao_atividade', '');
+      up('carga_incendio_mj_m2', 0);
+    }
   }
 
-  const atual = dados.cnae ? getCnae(dados.cnae) : undefined;
+  function adicionar(r: CnaeRow) {
+    // Evita duplicar
+    if (cnaesSel.some((c) => c.cnae === r.cnae && c.divisao === r.divisao)) {
+      setBusca('');
+      setResultados([]);
+      return;
+    }
+    const novo: CnaeSelecionado = {
+      id: `${r.cnae}-${r.divisao}-${Date.now()}`,
+      cnae: r.cnae,
+      grupo: r.grupo,
+      ocupacao: r.ocupacao,
+      divisao: r.divisao,
+      descricao: r.descricao,
+      carga_incendio_mj_m2: r.carga_incendio_mj_m2 ?? 0
+    };
+    const novaLista = [...cnaesSel, novo];
+    up('cnaes', novaLista);
+    sincronizarLegado(novaLista);
+    setBusca('');
+    setResultados([]);
+  }
+
+  function remover(id: string) {
+    const novaLista = cnaesSel.filter((c) => c.id !== id);
+    up('cnaes', novaLista);
+    sincronizarLegado(novaLista);
+  }
+
+  // Inicializa cnaes[] a partir dos campos legados se o usuário tem CNAE antigo mas não tem lista
+  useEffect(() => {
+    if (cnaesSel.length === 0 && dados.cnae && dados.divisao) {
+      const lista: CnaeSelecionado[] = [{
+        id: `${dados.cnae}-${dados.divisao}-legacy`,
+        cnae: dados.cnae,
+        grupo: dados.grupo || '',
+        ocupacao: dados.ocupacao || '',
+        divisao: dados.divisao,
+        descricao: dados.descricao_atividade || '',
+        carga_incendio_mj_m2: Number(dados.carga_incendio_mj_m2) || 0
+      }];
+      up('cnaes', lista);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-bold">Classificação por CNAE</h2>
-      <p className="text-sm text-muted">Pesquise pelo código CNAE, descrição da atividade ou divisão (ex.: I-1, B-2).</p>
+      <p className="text-sm text-muted">
+        Pesquise pelo código CNAE, descrição da atividade ou divisão (ex.: I-1, B-2).
+        Para <strong>edificação mista</strong>, adicione mais de uma ocupação.
+      </p>
 
-      <Field label="Buscar atividade">
+      <Field label="Buscar atividade / Adicionar ocupação">
         <input className="input" placeholder="Ex.: indústria de móveis, hotel, escola, 4711-3..." value={busca} onChange={e => setBusca(e.target.value)} />
       </Field>
       {resultados.length > 0 && (
         <div className="border border-border rounded-md max-h-72 overflow-auto bg-white">
           {resultados.map(r => (
-            <button key={r.cnae + r.descricao} type="button" onClick={() => escolher(r)} className="w-full text-left px-3 py-2 hover:bg-surface border-b border-border last:border-0">
+            <button key={r.cnae + r.descricao} type="button" onClick={() => adicionar(r)} className="w-full text-left px-3 py-2 hover:bg-surface border-b border-border last:border-0">
               <div className="text-xs text-primary font-mono">{r.cnae} • {r.divisao}</div>
               <div className="text-sm">{r.descricao}</div>
               <div className="text-xs text-muted">{r.ocupacao} • Carga {r.carga_incendio_mj_m2 ?? '—'} MJ/m²</div>
@@ -246,16 +310,41 @@ function Etapa2({ dados, up, calc }: any) {
         </div>
       )}
 
-      {atual && (
+      {cnaesSel.length > 0 && (
+        <div className="space-y-2">
+          <div className="text-sm font-semibold text-ink">
+            Ocupações selecionadas ({cnaesSel.length})
+            {cnaesSel.length > 1 && (
+              <span className="ml-2 text-xs font-medium px-2 py-0.5 rounded-full bg-[#FFF2CC] text-[#854F0B]">
+                Edificação mista
+              </span>
+            )}
+          </div>
+          {cnaesSel.map((c, idx) => (
+            <div key={c.id} className="flex items-start gap-2 border border-border rounded-md bg-white p-3">
+              <div className="flex-1">
+                <div className="text-xs text-primary font-mono">{c.cnae} • {c.divisao}{idx === 0 && cnaesSel.length > 1 ? ' • principal' : ''}</div>
+                <div className="text-sm font-medium">{c.descricao}</div>
+                <div className="text-xs text-muted">{c.ocupacao} • Carga {c.carga_incendio_mj_m2 ?? '—'} MJ/m²</div>
+              </div>
+              <button type="button" onClick={() => remover(c.id)} className="text-error text-sm px-2" aria-label="Remover ocupação">✕</button>
+            </div>
+          ))}
+          {cnaesSel.length > 1 && calc.ocupacao_resumo && (
+            <div className="rounded-md bg-surface border border-border p-3 text-sm">
+              <div className="text-xs uppercase tracking-wide text-muted">Resumo da ocupação</div>
+              <div className="font-semibold text-ink mt-0.5">{calc.ocupacao_resumo}</div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {cnaesSel.length === 1 && (
         <div className="rounded-md bg-surface border border-border p-4 text-sm">
-          <div className="font-semibold text-ink">{atual.descricao}</div>
-          <div className="grid sm:grid-cols-4 gap-2 mt-3 text-xs">
-            <Info label="CNAE" value={atual.cnae} />
-            <Info label="Grupo" value={atual.grupo} />
-            <Info label="Divisão" value={atual.divisao} />
-            <Info label="Ocupação" value={atual.ocupacao} />
-            <Info label="Carga MJ/m²" value={String(atual.carga_incendio_mj_m2 ?? '—')} />
+          <div className="grid sm:grid-cols-3 gap-2 text-xs">
             <Info label="Risco" value={calc.risco_incendio} />
+            <Info label="Carga MJ/m²" value={String(cnaesSel[0].carga_incendio_mj_m2 ?? '—')} />
+            <Info label="Grupo" value={cnaesSel[0].grupo} />
           </div>
         </div>
       )}
@@ -808,14 +897,50 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Etapa5({ calc }: any) {
+function Etapa5({ dados, calc }: any) {
+  const popFixa = Number(dados.info_operacional?.populacao_fixa) || 0;
+  const popFlut = Number(dados.info_operacional?.populacao_flutuante) || 0;
+  const popTotal = popFixa + popFlut;
+  const grupo = String(dados.grupo || '').toUpperCase().trim();
+  const isGrupoF = grupo.startsWith('F');
+  const popAjustada = Number(calc.brigada_populacao_ajustada) || popTotal;
+  const brigadistas = Number(calc.brigadistas_necessarios) || Math.max(1, Math.ceil(popAjustada / 200));
+
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-bold">Brigada de incêndio (NPT 017)</h2>
-      <p className="text-sm text-muted">Cálculo conforme nível de risco e população.</p>
-      <div className="rounded-md bg-surface border border-border p-4 text-sm grid sm:grid-cols-2 gap-3">
-        <Info label="Brigadistas" value={String(calc.brigadistas_necessarios)} />
-        <Info label="Justificativa" value={calc.brigadistas_descricao} />
+      <p className="text-sm text-muted">
+        Cálculo conforme NPT 017 item 6.2: 1 brigadista para cada 200 pessoas,
+        arredondado para o inteiro imediatamente superior. Para edificações do
+        Grupo F (locais de reunião de público) aplica-se acréscimo de 30% sobre a população.
+      </p>
+
+      {popTotal === 0 && (
+        <div className="rounded-md bg-[#FFF2CC] border border-[#E2C77E] p-3 text-sm text-[#854F0B]">
+          Informe a população fixa e flutuante na etapa 8 (Dados complementares → Informações operacionais)
+          para o cálculo da brigada.
+        </div>
+      )}
+
+      <div className="rounded-md bg-surface border border-border p-4 text-sm grid sm:grid-cols-3 gap-3">
+        <Info label="População fixa" value={String(popFixa)} />
+        <Info label="População flutuante" value={String(popFlut)} />
+        <Info label="População total" value={String(popTotal)} />
+        <Info label="Grupo" value={dados.grupo || '—'} />
+        <Info label="Acréscimo Grupo F (+30%)" value={isGrupoF ? 'Sim' : 'Não'} />
+        <Info label="População ajustada" value={String(popAjustada)} />
+      </div>
+
+      <div className="card">
+        <h3 className="font-semibold text-ink">Memória de cálculo</h3>
+        <p className="text-sm mt-2 whitespace-pre-line">
+          {calc.brigadistas_descricao || `População ajustada (${popAjustada}) ÷ 200 = ${(popAjustada / 200).toFixed(2)} → arredondado para cima = ${brigadistas} brigadista(s).`}
+        </p>
+      </div>
+
+      <div className="rounded-md bg-primary text-white p-4 text-center">
+        <div className="text-xs uppercase tracking-wide opacity-80">Resultado</div>
+        <div className="text-2xl font-bold mt-1">{brigadistas} brigadista(s)</div>
       </div>
     </div>
   );
@@ -932,6 +1057,45 @@ function Etapa6({ dados, up, calc }: any) {
 // =============================================================================
 // Etapa 5: Memorial de cálculo da carga de incêndio (média ponderada)
 // =============================================================================
+function CnaeBuscaLinha({ onSelecionar }: { onSelecionar: (r: CnaeRow) => void }) {
+  const [busca, setBusca] = useState('');
+  const [resultados, setResultados] = useState<CnaeRow[]>([]);
+  const [aberto, setAberto] = useState(false);
+  useEffect(() => {
+    if (!aberto) return;
+    const t = setTimeout(() => setResultados(buscarCnae(busca, 15)), 200);
+    return () => clearTimeout(t);
+  }, [busca, aberto]);
+  return (
+    <div className="relative">
+      <input
+        className="input text-xs"
+        placeholder="🔍 CNAE ou atividade"
+        value={busca}
+        onFocus={() => setAberto(true)}
+        onBlur={() => setTimeout(() => setAberto(false), 200)}
+        onChange={(e) => { setBusca(e.target.value); setAberto(true); }}
+      />
+      {aberto && resultados.length > 0 && (
+        <div className="absolute z-20 left-0 right-0 top-full mt-1 max-h-56 overflow-auto bg-white border border-border rounded-md shadow-lg">
+          {resultados.map((r) => (
+            <button
+              key={r.cnae + r.descricao}
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); onSelecionar(r); setBusca(''); setAberto(false); }}
+              className="w-full text-left px-2 py-1 hover:bg-surface border-b border-border last:border-0"
+            >
+              <div className="text-[10px] text-primary font-mono">{r.cnae} • {r.divisao}</div>
+              <div className="text-xs truncate">{r.descricao}</div>
+              <div className="text-[10px] text-muted">Carga {r.carga_incendio_mj_m2 ?? '—'} MJ/m²</div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function EtapaCargaIncendio({ dados, up, calc }: any) {
   const itens: ItemCargaIncendio[] = Array.isArray(dados.carga_incendio_itens)
     ? dados.carga_incendio_itens
@@ -955,8 +1119,23 @@ function EtapaCargaIncendio({ dados, up, calc }: any) {
     setItens(itens.map((i) => (i.id === id ? { ...i, [campo]: valor } : i)));
   }
   function preencherDoCnae() {
-    if (!dados.divisao || !dados.area_construida_m2) return;
     if (itens.length > 0) return;
+    const cnaesSel: CnaeSelecionado[] = Array.isArray(dados.cnaes) ? dados.cnaes : [];
+    // Se há múltiplas ocupações (mista), gera uma linha para cada
+    if (cnaesSel.length > 0) {
+      const novos = cnaesSel.map((c) =>
+        novoItemCargaIncendio({
+          pavimento_setor: 'TÉRREO',
+          ocupacao_descricao: `${c.descricao} (${c.divisao})`.trim(),
+          divisao: c.divisao,
+          ci_mj_m2: Number(c.carga_incendio_mj_m2) || 0,
+          area_m2: cnaesSel.length === 1 ? Number(dados.area_construida_m2) || 0 : 0
+        })
+      );
+      setItens(novos);
+      return;
+    }
+    if (!dados.divisao) return;
     setItens([
       novoItemCargaIncendio({
         pavimento_setor: 'TÉRREO',
@@ -1020,12 +1199,28 @@ function EtapaCargaIncendio({ dados, up, calc }: any) {
                       />
                     </td>
                     <td className="p-1">
-                      <input
-                        className="input text-xs"
-                        value={it.ocupacao_descricao}
-                        onChange={(e) => atualizar(it.id, 'ocupacao_descricao', e.target.value)}
-                        placeholder="Ex.: INDÚSTRIA (I-2)"
-                      />
+                      <div className="space-y-1">
+                        <input
+                          className="input text-xs"
+                          value={it.ocupacao_descricao}
+                          onChange={(e) => atualizar(it.id, 'ocupacao_descricao', e.target.value)}
+                          placeholder="Ex.: INDÚSTRIA (I-2)"
+                        />
+                        <CnaeBuscaLinha
+                          onSelecionar={(r) => {
+                            setItens(itens.map((i) =>
+                              i.id === it.id
+                                ? {
+                                    ...i,
+                                    ocupacao_descricao: `${r.descricao} (${r.divisao})`,
+                                    divisao: r.divisao,
+                                    ci_mj_m2: r.carga_incendio_mj_m2 ?? 0
+                                  }
+                                : i
+                            ));
+                          }}
+                        />
+                      </div>
                     </td>
                     <td className="p-1">
                       <input
@@ -1150,6 +1345,9 @@ function EtapaComplementar({ dados, up }: any) {
           </Field>
           <Field label="Data">
             <input type="date" className="input" value={dados.oficio_data || ''} onChange={(e) => up('oficio_data', e.target.value)} />
+          </Field>
+          <Field label="Inscrição Imobiliária" hint="Aparece no ofício de apresentação">
+            <input className="input" value={dados.inscricao_imobiliaria || ''} onChange={(e) => up('inscricao_imobiliaria', e.target.value)} />
           </Field>
         </div>
       </div>

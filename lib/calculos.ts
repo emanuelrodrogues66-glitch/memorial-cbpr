@@ -144,18 +144,30 @@ export function unidadesPassagem(divisao: string, populacao: number) {
   };
 }
 
-// NPT 017: Brigada de incêndio. Regra simplificada: 6 brigadistas para cada 200 pessoas
-// (acima de 200, somar 1 brigadista a cada 50 pessoas adicionais — varia por risco).
-export function calcularBrigada(populacao: number, risco: RiscoIncendio) {
-  // Coeficientes por nível de risco (proporção em %): baixo 5, médio 10, alto 20
-  const coef = risco === 'BAIXO' ? 0.05 : risco === 'MEDIO' ? 0.10 : 0.20;
-  const minimoLei = Math.max(2, Math.ceil(populacao * coef));
-  // Regra prática 6 a cada 200 pessoas conforme planilha original
-  const regra200 = Math.max(6, Math.ceil(populacao / 200) * 6);
-  const brigadistas = Math.max(minimoLei, regra200);
+// NPT 017 item 6.2: a composição da brigada é determinada pela população
+// potencialmente exposta, na proporção de 1 brigadista a cada 200 pessoas,
+// considerando-se o número inteiro imediatamente superior.
+// Para o Grupo F (locais de reunião de público) a população é acrescida em 30%.
+export function calcularBrigada(populacao: number, grupo: string | undefined) {
+  const pop = Math.max(0, Math.ceil(Number(populacao) || 0));
+  const isGrupoF = (grupo || '').toUpperCase().trim().startsWith('F');
+  const popAjustada = isGrupoF ? Math.ceil(pop * 1.30) : pop;
+  const razao = popAjustada / 200;
+  const brigadistas = Math.max(1, Math.ceil(razao));
+  const partes: string[] = [];
+  partes.push(`População potencialmente exposta: ${pop} pessoa(s).`);
+  if (isGrupoF) {
+    partes.push(`Grupo F (locais de reunião de público): acréscimo de 30% → ${pop} × 1,30 = ${popAjustada} pessoa(s).`);
+  }
+  partes.push(
+    `Cálculo NPT 017 item 6.2: ${popAjustada} ÷ 200 = ${razao.toFixed(2)} → ${brigadistas} brigadista(s) ` +
+    `(arredondamento para o número inteiro imediatamente superior).`
+  );
+  partes.push('Critério: 1 brigadista orgânico para cada 200 (duzentas) pessoas (Tabela 1 da NPT 011).');
   return {
     brigadistas,
-    descricao: `Risco ${risco.toLowerCase()} • ${brigadistas} brigadista(s) treinado(s) conforme NPT 017`
+    populacao_ajustada: popAjustada,
+    descricao: partes.join(' ')
   };
 }
 
@@ -186,6 +198,23 @@ export function sugerirMedidas(
   return m;
 }
 
+// Resumo de ocupação quando há mais de um CNAE (edificação mista)
+export function resumoOcupacao(
+  cnaes: { divisao?: string; grupo?: string; ocupacao?: string }[],
+  fallbackOcupacao?: string,
+  fallbackDivisao?: string
+): string {
+  const valid = (cnaes || []).filter((c) => (c?.divisao || '').trim());
+  if (valid.length <= 1) {
+    const div = valid[0]?.divisao || fallbackDivisao || '';
+    const oc = valid[0]?.ocupacao || fallbackOcupacao || '';
+    return div ? `${oc} (${div})` : oc;
+  }
+  // Remove divisões repetidas mantendo ordem
+  const divs = Array.from(new Set(valid.map((c) => (c.divisao || '').trim()).filter(Boolean)));
+  return `Mista (Grupo ${divs.join(' e ')})`;
+}
+
 // Função orquestradora: dados parciais -> dados completos calculados
 export function calcular(dados: any) {
   const cnae = getCnae(dados.cnae);
@@ -211,7 +240,8 @@ export function calcular(dados: any) {
     dados.populacao_calculada
   );
   const up = unidadesPassagem(divisao, pop.valor);
-  const brig = calcularBrigada(pop.valor, risco);
+  const grupoPrincipal = cnae?.grupo ?? dados.grupo ?? '';
+  const brig = calcularBrigada(pop.valor, grupoPrincipal);
   const medidas = sugerirMedidas(
     Number(dados.altura_edificacao_m) || 0,
     Number(dados.area_construida_m2) || 0,
@@ -234,6 +264,14 @@ export function calcular(dados: any) {
   const saidas_dimensionamento: DimPavimento[] = pavs.length ? dimensionarTodos(pavs) : [];
   const populacao_saidas = pavs.length ? populacaoGlobal(pavs) : 0;
 
+  // Resumo de ocupação (edificação mista quando houver mais de um CNAE)
+  const cnaesArr: any[] = Array.isArray(dados.cnaes) ? dados.cnaes : [];
+  const ocupacaoResumo = resumoOcupacao(
+    cnaesArr,
+    cnae?.ocupacao ?? dados.ocupacao,
+    divisao
+  );
+
   return {
     grupo: cnae?.grupo ?? dados.grupo ?? '',
     ocupacao: cnae?.ocupacao ?? dados.ocupacao ?? '',
@@ -251,11 +289,13 @@ export function calcular(dados: any) {
     unidades_passagem_porta: up.porta,
     brigadistas_necessarios: brig.brigadistas,
     brigadistas_descricao: brig.descricao,
+    brigada_populacao_ajustada: brig.populacao_ajustada,
     medidas_protecao: medidas,
     medidas_cscip: cscip.medidas,
     cscip_simplificada: cscip.simplificada,
     saidas_dimensionamento,
     populacao_saidas,
-    carga_incendio_memorial: memCi
+    carga_incendio_memorial: memCi,
+    ocupacao_resumo: ocupacaoResumo
   };
 }

@@ -4,6 +4,12 @@ import npt008 from './data/npt008.json';
 import npt011 from './data/npt011.json';
 import tiposAltura from './data/tipos_altura.json';
 import { getMedidasCSCIP, type MedidaCSCIP } from './cscip-medidas';
+import {
+  dimensionarTodos,
+  populacaoGlobal,
+  type Pavimento,
+  type DimPavimento
+} from './saidas-npt011';
 import type {
   CnaeRow,
   Npt008Row,
@@ -207,6 +213,13 @@ export function calcular(dados: any) {
       )
     : { medidas: [] as MedidaCSCIP[], simplificada: false };
 
+  // Memorial detalhado de saídas (NPT 011) — quando o usuário preenche pavimentos
+  const pavs: Pavimento[] = Array.isArray(dados.saidas_pavimentos)
+    ? (dados.saidas_pavimentos as Pavimento[])
+    : [];
+  const saidas_dimensionamento: DimPavimento[] = pavs.length ? dimensionarTodos(pavs) : [];
+  const populacao_saidas = pavs.length ? populacaoGlobal(pavs) : 0;
+
   return {
     grupo: cnae?.grupo ?? dados.grupo ?? '',
     ocupacao: cnae?.ocupacao ?? dados.ocupacao ?? '',
@@ -226,6 +239,8 @@ export function calcular(dados: any) {
     brigadistas_descricao: brig.descricao,
     medidas_protecao: medidas,
     medidas_cscip: cscip.medidas,
-    cscip_simplificada: cscip.simplificada
+    cscip_simplificada: cscip.simplificada,
+    saidas_dimensionamento,
+    populacao_saidas
   };
 }

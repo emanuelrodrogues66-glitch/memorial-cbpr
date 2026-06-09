@@ -76,6 +76,8 @@ export type DadosObra = {
   unidades_passagem_acesso: number;
   unidades_passagem_escada: number;
   unidades_passagem_porta: number;
+  // 4b. Memorial de saídas detalhado (novo modelo NPT 011)
+  saidas_pavimentos?: any[]; // Pavimento[] de lib/saidas-npt011.ts
 
   // 5. Brigada
   brigadistas_necessarios: number;

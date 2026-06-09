@@ -3,6 +3,19 @@ import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { buscarCnae, calcular, getCnae } from '@/lib/calculos';
 import type { CnaeRow } from '@/lib/types';
+import {
+  DATA_SAIDAS,
+  DIVS_AGRUPADAS,
+  COMPONENTE_LABEL,
+  novoPavimento,
+  novoAmbiente,
+  novaSaidaReal,
+  type Pavimento,
+  type Ambiente,
+  type SaidaReal,
+  type ComponenteSaida,
+  type DimPavimento
+} from '@/lib/saidas-npt011';
 
 const ETAPAS = [
   '1. Dados da obra',
@@ -39,6 +52,7 @@ export default function ProjetoForm({ projeto, profile }: { projeto: any; profil
     altura_edificacao_m: projeto.dados?.altura_edificacao_m ?? 0,
     numero_pavimentos: projeto.dados?.numero_pavimentos ?? 1,
     populacao_calculada: projeto.dados?.populacao_calculada ?? 0,
+    saidas_pavimentos: projeto.dados?.saidas_pavimentos ?? [],
     medidas_protecao: projeto.dados?.medidas_protecao ?? [],
     responsavel_tecnico: projeto.dados?.responsavel_tecnico ?? profile?.full_name ?? '',
     crea_resp: projeto.dados?.crea_resp ?? profile?.crea ?? '',
@@ -258,23 +272,526 @@ function Etapa3({ dados, up, calc }: any) {
 }
 
 function Etapa4({ dados, up, calc }: any) {
+  const pavs: Pavimento[] = Array.isArray(dados.saidas_pavimentos)
+    ? dados.saidas_pavimentos
+    : [];
+  const dims: DimPavimento[] = calc.saidas_dimensionamento || [];
+
+  function setPavs(next: Pavimento[]) {
+    up('saidas_pavimentos', next);
+  }
+
+  function addPav() {
+    const id = (pavs.reduce((m, p) => Math.max(m, p.id), 0) || 0) + 1;
+    setPavs([...pavs, novoPavimento(id)]);
+  }
+
+  function removePav(id: number) {
+    setPavs(pavs.filter((p) => p.id !== id));
+  }
+
+  function patchPav(id: number, patch: Partial<Pavimento>) {
+    setPavs(pavs.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+  }
+
+  function toggleModo(pid: number, mode: ComponenteSaida) {
+    const p = pavs.find((x) => x.id === pid);
+    if (!p) return;
+    patchPav(pid, {
+      componentes_ativos: { ...p.componentes_ativos, [mode]: !p.componentes_ativos[mode] }
+    });
+  }
+
+  function addAmb(pid: number) {
+    const p = pavs.find((x) => x.id === pid);
+    if (!p) return;
+    const id = (p.ambientes.reduce((m, a) => Math.max(m, a.id), 0) || 0) + 1;
+    patchPav(pid, { ambientes: [...p.ambientes, novoAmbiente(id)] });
+  }
+
+  function removeAmb(pid: number, aid: number) {
+    const p = pavs.find((x) => x.id === pid);
+    if (!p || p.ambientes.length <= 1) return;
+    patchPav(pid, { ambientes: p.ambientes.filter((a) => a.id !== aid) });
+  }
+
+  function patchAmb(pid: number, aid: number, patch: Partial<Ambiente>) {
+    const p = pavs.find((x) => x.id === pid);
+    if (!p) return;
+    patchPav(pid, {
+      ambientes: p.ambientes.map((a) => (a.id === aid ? { ...a, ...patch } : a))
+    });
+  }
+
+  function addSaida(pid: number, tipo: ComponenteSaida) {
+    const p = pavs.find((x) => x.id === pid);
+    if (!p) return;
+    const id = (p.saidas_reais.reduce((m, s) => Math.max(m, s.id), 0) || 0) + 1;
+    patchPav(pid, { saidas_reais: [...p.saidas_reais, novaSaidaReal(id, tipo)] });
+  }
+
+  function removeSaida(pid: number, sid: number) {
+    const p = pavs.find((x) => x.id === pid);
+    if (!p) return;
+    patchPav(pid, { saidas_reais: p.saidas_reais.filter((s) => s.id !== sid) });
+  }
+
+  function patchSaida(pid: number, sid: number, patch: Partial<SaidaReal>) {
+    const p = pavs.find((x) => x.id === pid);
+    if (!p) return;
+    patchPav(pid, {
+      saidas_reais: p.saidas_reais.map((s) => (s.id === sid ? { ...s, ...patch } : s))
+    });
+  }
+
+  // Pré-popular o primeiro pavimento com a divisão e área da etapa 2/3
+  useEffect(() => {
+    if (pavs.length === 0 && calc.divisao && DATA_SAIDAS[calc.divisao]) {
+      const pav = novoPavimento(1, 'Pavimento térreo');
+      pav.ambientes[0] = {
+        id: 1,
+        nome: 'Ambiente principal',
+        div: calc.divisao,
+        area: Number(dados.area_construida_m2) || 0,
+        excluir: 0
+      };
+      setPavs([pav]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calc.divisao]);
+
+  const populacaoTotal = dims.reduce((s, d) => s + d.populacao_total, 0);
+
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-bold">População e saídas (NPT 011)</h2>
-      <p className="text-sm text-muted">População calculada com base na densidade da divisão. Você pode informar um valor diferente quando justificado.</p>
-      <div className="grid sm:grid-cols-2 gap-3">
-        <Field label="População — calculada" hint={calc.populacao_descricao_npt011}>
-          <input className="input" disabled value={calc.populacao_calculada} />
-        </Field>
-        <Field label="Sobrescrever população" hint="Deixe 0 para usar o cálculo automático.">
-          <input type="number" min="0" className="input" value={dados.populacao_calculada || 0} onChange={e => up('populacao_calculada', Number(e.target.value))} />
-        </Field>
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-xl font-bold">Memorial de saídas (NPT 011)</h2>
+        <p className="text-sm text-muted mt-1">
+          Dimensione as saídas por pavimento e bloco. Para cada pavimento, informe os ambientes
+          (com divisão CSCIP e área útil) e os componentes a calcular (porta, escada, acesso).
+          Em seguida informe as portas/escadas reais para validar se atendem às unidades de passagem.
+        </p>
       </div>
-      <div className="rounded-md bg-surface border border-border p-4 text-sm grid sm:grid-cols-3 gap-3">
-        <Info label="Unid. passagem (acesso)" value={String(calc.unidades_passagem_acesso)} />
-        <Info label="Unid. passagem (escada)" value={String(calc.unidades_passagem_escada)} />
-        <Info label="Unid. passagem (porta)" value={String(calc.unidades_passagem_porta)} />
+
+      {pavs.length === 0 && (
+        <div className="rounded-md border border-dashed border-border bg-surface p-4 text-sm text-muted">
+          Nenhum pavimento ainda. Clique em "Novo pavimento / bloco" para começar.
+        </div>
+      )}
+
+      {pavs.map((p) => {
+        const dim = dims.find((d) => d.pavimento_id === p.id);
+        return (
+          <PavimentoCard
+            key={p.id}
+            pav={p}
+            dim={dim}
+            onLabel={(label) => patchPav(p.id, { label })}
+            onRemove={() => removePav(p.id)}
+            onToggleModo={(m) => toggleModo(p.id, m)}
+            onAddAmb={() => addAmb(p.id)}
+            onRemoveAmb={(aid) => removeAmb(p.id, aid)}
+            onPatchAmb={(aid, patch) => patchAmb(p.id, aid, patch)}
+            onAddSaida={(t) => addSaida(p.id, t)}
+            onRemoveSaida={(sid) => removeSaida(p.id, sid)}
+            onPatchSaida={(sid, patch) => patchSaida(p.id, sid, patch)}
+          />
+        );
+      })}
+
+      <div className="flex gap-2">
+        <button className="btn-primary" onClick={addPav}>
+          + Novo pavimento / bloco
+        </button>
       </div>
+
+      {pavs.length >= 2 && (
+        <div className="rounded-md border border-border bg-surface p-4">
+          <div className="font-semibold text-ink mb-2">Resumo geral</div>
+          <dl className="text-sm space-y-1">
+            {dims.map((d) => (
+              <div key={d.pavimento_id} className="flex justify-between">
+                <dt className="text-muted">{d.label}</dt>
+                <dd className="font-medium">{d.populacao_total} pessoas</dd>
+              </div>
+            ))}
+            <div className="flex justify-between border-t border-border pt-2 mt-2">
+              <dt className="text-muted">População total (todos os pavimentos)</dt>
+              <dd className="font-bold text-ink">{populacaoTotal} pessoas</dd>
+            </div>
+          </dl>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DivSelect({
+  value,
+  onChange
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <select className="input" value={value} onChange={(e) => onChange(e.target.value)}>
+      <option value="">—</option>
+      {DIVS_AGRUPADAS.map(([g, items]) => (
+        <optgroup key={g} label={g}>
+          {items.map((d) => {
+            const info = DATA_SAIDAS[d];
+            return (
+              <option key={d} value={d}>
+                {d} — {info.pop}
+              </option>
+            );
+          })}
+        </optgroup>
+      ))}
+    </select>
+  );
+}
+
+function PavimentoCard({
+  pav,
+  dim,
+  onLabel,
+  onRemove,
+  onToggleModo,
+  onAddAmb,
+  onRemoveAmb,
+  onPatchAmb,
+  onAddSaida,
+  onRemoveSaida,
+  onPatchSaida
+}: {
+  pav: Pavimento;
+  dim?: DimPavimento;
+  onLabel: (v: string) => void;
+  onRemove: () => void;
+  onToggleModo: (m: ComponenteSaida) => void;
+  onAddAmb: () => void;
+  onRemoveAmb: (aid: number) => void;
+  onPatchAmb: (aid: number, patch: Partial<Ambiente>) => void;
+  onAddSaida: (t: ComponenteSaida) => void;
+  onRemoveSaida: (sid: number) => void;
+  onPatchSaida: (sid: number, patch: Partial<SaidaReal>) => void;
+}) {
+  const modos: ComponenteSaida[] = ['porta', 'escada', 'acesso'];
+
+  return (
+    <div className="rounded-md border border-border bg-white p-4 space-y-4">
+      <div className="flex items-center justify-between gap-2">
+        <input
+          className="input font-semibold text-lg"
+          style={{ maxWidth: 280 }}
+          value={pav.label}
+          onChange={(e) => onLabel(e.target.value)}
+        />
+        <button className="btn-secondary text-error" onClick={onRemove}>
+          Remover pavimento
+        </button>
+      </div>
+
+      <div>
+        <div className="text-xs uppercase tracking-wide text-muted mb-1">
+          Componentes a dimensionar
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {modos.map((m) => {
+            const active = pav.componentes_ativos[m];
+            return (
+              <button
+                key={m}
+                onClick={() => onToggleModo(m)}
+                className={
+                  active
+                    ? 'px-3 py-1.5 rounded-md text-xs font-medium bg-primary text-white border border-primary'
+                    : 'px-3 py-1.5 rounded-md text-xs font-medium bg-white text-muted border border-border hover:text-ink'
+                }
+              >
+                {COMPONENTE_LABEL[m]}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div>
+        <div className="text-xs uppercase tracking-wide text-muted mb-2">Ambientes</div>
+        <div className="space-y-2">
+          {pav.ambientes.map((a) => (
+            <div
+              key={a.id}
+              className="grid sm:grid-cols-12 gap-2 items-end border-b border-border pb-2"
+            >
+              <div className="sm:col-span-3">
+                <label className="label">Ambiente</label>
+                <input
+                  className="input"
+                  placeholder="ex.: Templo, Sala 1"
+                  value={a.nome}
+                  onChange={(e) => onPatchAmb(a.id, { nome: e.target.value })}
+                />
+              </div>
+              <div className="sm:col-span-4">
+                <label className="label">Divisão</label>
+                <DivSelect
+                  value={a.div}
+                  onChange={(v) => onPatchAmb(a.id, { div: v })}
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="label">Área útil (m²)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="input"
+                  value={a.area || ''}
+                  onChange={(e) => onPatchAmb(a.id, { area: Number(e.target.value) })}
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="label">Excluir (m²)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="input"
+                  value={a.excluir || ''}
+                  onChange={(e) => onPatchAmb(a.id, { excluir: Number(e.target.value) })}
+                />
+              </div>
+              <div className="sm:col-span-1 flex justify-end">
+                {pav.ambientes.length > 1 && (
+                  <button
+                    className="btn-secondary text-error"
+                    onClick={() => onRemoveAmb(a.id)}
+                    aria-label="Remover ambiente"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        <button onClick={onAddAmb} className="btn-secondary text-xs mt-2">
+          + Adicionar ambiente
+        </button>
+      </div>
+
+      {dim && dim.dimensionamento.length > 0 && (
+        <div className="rounded-md bg-surface border border-border p-3">
+          <div className="grid sm:grid-cols-3 gap-3 mb-3">
+            <Metric label="Ambientes" value={String(dim.por_ambiente.length)} />
+            <Metric label="População total" value={`${dim.populacao_total} pess.`} />
+            <Metric label="Componentes" value={String(dim.dimensionamento.length)} />
+          </div>
+          <div className="text-xs uppercase tracking-wide text-muted mb-2">
+            Dimensionamento por componente
+          </div>
+          {dim.dimensionamento.map((d) => (
+            <div key={d.mode} className="mb-3">
+              <div className="text-sm font-semibold text-ink">{d.label}</div>
+              <table className="w-full text-xs mt-1">
+                <thead className="text-muted">
+                  <tr>
+                    <th className="text-left py-1">Ambiente</th>
+                    <th className="text-right">Pop.</th>
+                    <th className="text-right">C</th>
+                    <th className="text-right">N (UP)</th>
+                    <th className="text-right">UP final</th>
+                    <th className="text-right">Largura</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {d.por_ambiente.map((row, i) => (
+                    <tr key={i} className="border-t border-border">
+                      <td className="py-1">
+                        {row.ambiente}{' '}
+                        <span className="text-muted">({row.divisao})</span>
+                      </td>
+                      <td className="text-right">{row.populacao}</td>
+                      <td className="text-right">{row.c}</td>
+                      <td className="text-right">{row.up_bruto}</td>
+                      <td className="text-right">{row.up_final}</td>
+                      <td className="text-right">
+                        {row.largura_m.toFixed(2)} m
+                        {row.ajustado_min && (
+                          <span className="ml-1 text-[10px] text-warning">(mín)</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="border-t-2 border-border font-semibold">
+                    <td className="py-1">
+                      Total agrupado{' '}
+                      <span className="text-muted font-normal">
+                        (C mais restritivo = {d.c_critico})
+                      </span>
+                    </td>
+                    <td className="text-right">{dim.populacao_total}</td>
+                    <td className="text-right">{d.c_critico}</td>
+                    <td></td>
+                    <td className="text-right">{d.total_up}</td>
+                    <td className="text-right">{d.total_largura_m.toFixed(2)} m</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          ))}
+          <p className="text-[11px] text-muted mt-1">
+            UP = 0,55 m | Largura mínima: porta 0,80 m (1 UP), escada/acesso 1,20 m (2 UP) | Total
+            agrupado usa C mais restritivo (item 5.3.2.2 NPT 011).
+          </p>
+        </div>
+      )}
+
+      {dim && dim.dimensionamento.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs uppercase tracking-wide text-muted">
+              Saídas existentes (verificação)
+            </div>
+            <div className="flex gap-1">
+              {modos
+                .filter((m) => pav.componentes_ativos[m])
+                .map((m) => (
+                  <button
+                    key={m}
+                    className="btn-secondary text-xs"
+                    onClick={() => onAddSaida(m)}
+                  >
+                    + {COMPONENTE_LABEL[m]}
+                  </button>
+                ))}
+            </div>
+          </div>
+
+          {pav.saidas_reais.length === 0 ? (
+            <div className="text-xs text-muted italic">
+              Adicione as portas/escadas/acessos existentes para validar se atendem.
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {pav.saidas_reais.map((s) => (
+                <div
+                  key={s.id}
+                  className="grid sm:grid-cols-12 gap-2 items-end border-b border-border pb-2"
+                >
+                  <div className="sm:col-span-3">
+                    <label className="label">Tipo</label>
+                    <select
+                      className="input"
+                      value={s.tipo}
+                      onChange={(e) =>
+                        onPatchSaida(s.id, { tipo: e.target.value as ComponenteSaida })
+                      }
+                    >
+                      {modos.map((m) => (
+                        <option key={m} value={m}>
+                          {COMPONENTE_LABEL[m]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="sm:col-span-4">
+                    <label className="label">Identificação</label>
+                    <input
+                      className="input"
+                      placeholder="ex.: Porta P1"
+                      value={s.identificacao}
+                      onChange={(e) =>
+                        onPatchSaida(s.id, { identificacao: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="label">Largura (m)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      className="input"
+                      value={s.largura_m || ''}
+                      onChange={(e) =>
+                        onPatchSaida(s.id, { largura_m: Number(e.target.value) })
+                      }
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="label">Qtd</label>
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      className="input"
+                      value={s.quantidade || ''}
+                      onChange={(e) =>
+                        onPatchSaida(s.id, { quantidade: Number(e.target.value) })
+                      }
+                    />
+                  </div>
+                  <div className="sm:col-span-1 flex justify-end">
+                    <button
+                      className="btn-secondary text-error"
+                      onClick={() => onRemoveSaida(s.id)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {dim.verificacao.length > 0 && (
+            <div className="mt-3 space-y-1">
+              {dim.verificacao.map((v) => (
+                <div
+                  key={v.tipo}
+                  className={
+                    'rounded-md border px-3 py-2 text-sm flex flex-wrap items-center gap-2 ' +
+                    (v.atende
+                      ? 'border-success/40 bg-success/5'
+                      : 'border-error/40 bg-error/5')
+                  }
+                >
+                  <span
+                    className={
+                      'text-[11px] font-bold px-2 py-0.5 rounded-full ' +
+                      (v.atende
+                        ? 'bg-success text-white'
+                        : 'bg-error text-white')
+                    }
+                  >
+                    {v.atende ? 'ATENDE' : 'NÃO ATENDE'}
+                  </span>
+                  <span className="font-semibold">{v.label}</span>
+                  <span className="text-muted">
+                    Exigido: {v.up_exigido} UP / {v.largura_exigida_m.toFixed(2)} m
+                  </span>
+                  <span className="text-muted">→</span>
+                  <span>
+                    Real: {v.up_real} UP / {v.largura_real_m.toFixed(2)} m ({v.quantidade_elementos} un)
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-white rounded-md border border-border px-3 py-2">
+      <div className="text-[11px] uppercase tracking-wide text-muted">{label}</div>
+      <div className="text-lg font-semibold text-ink">{value}</div>
     </div>
   );
 }

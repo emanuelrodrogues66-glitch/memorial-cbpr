@@ -10,6 +10,11 @@ import {
   type Pavimento,
   type DimPavimento
 } from './saidas-npt011';
+import {
+  calcularMediaPonderada,
+  type ItemCargaIncendio,
+  type ResultadoCargaIncendio
+} from './carga-incendio';
 import type {
   CnaeRow,
   Npt008Row,
@@ -184,7 +189,16 @@ export function sugerirMedidas(
 // Função orquestradora: dados parciais -> dados completos calculados
 export function calcular(dados: any) {
   const cnae = getCnae(dados.cnae);
-  const carga = cnae?.carga_incendio_mj_m2 ?? dados.carga_incendio_mj_m2 ?? 0;
+  // Memorial de carga de incêndio (média ponderada por área) tem prioridade quando preenchido
+  const itensCi: ItemCargaIncendio[] = Array.isArray(dados.carga_incendio_itens)
+    ? (dados.carga_incendio_itens as ItemCargaIncendio[])
+    : [];
+  const memCi: ResultadoCargaIncendio = calcularMediaPonderada(itensCi);
+  const cargaCnae = cnae?.carga_incendio_mj_m2 ?? dados.carga_incendio_mj_m2 ?? 0;
+  const carga =
+    memCi.media_ponderada_mj_m2 > 0
+      ? memCi.media_ponderada_mj_m2
+      : cargaCnae;
   const risco = classificarRisco(Number(carga) || 0);
   const tipo = classificarTipoEdificacao(Number(dados.altura_edificacao_m) || 0);
   const classe = classeNpt008(Number(dados.altura_edificacao_m) || 0);
@@ -241,6 +255,7 @@ export function calcular(dados: any) {
     medidas_cscip: cscip.medidas,
     cscip_simplificada: cscip.simplificada,
     saidas_dimensionamento,
-    populacao_saidas
+    populacao_saidas,
+    carga_incendio_memorial: memCi
   };
 }

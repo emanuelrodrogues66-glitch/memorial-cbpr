@@ -16,14 +16,17 @@ import {
   type ComponenteSaida,
   type DimPavimento
 } from '@/lib/saidas-npt011';
+import { novoItemCargaIncendio, type ItemCargaIncendio } from '@/lib/carga-incendio';
 
 const ETAPAS = [
   '1. Dados da obra',
   '2. Classificação (CNAE)',
   '3. Características físicas',
   '4. População e saídas',
-  '5. Brigada',
-  '6. Medidas e responsável'
+  '5. Carga de incêndio',
+  '6. Brigada',
+  '7. Medidas e responsável',
+  '8. Dados complementares'
 ];
 
 export default function ProjetoForm({ projeto, profile }: { projeto: any; profile: any }) {
@@ -53,10 +56,17 @@ export default function ProjetoForm({ projeto, profile }: { projeto: any; profil
     numero_pavimentos: projeto.dados?.numero_pavimentos ?? 1,
     populacao_calculada: projeto.dados?.populacao_calculada ?? 0,
     saidas_pavimentos: projeto.dados?.saidas_pavimentos ?? [],
+    carga_incendio_itens: projeto.dados?.carga_incendio_itens ?? [],
     medidas_protecao: projeto.dados?.medidas_protecao ?? [],
     responsavel_tecnico: projeto.dados?.responsavel_tecnico ?? profile?.full_name ?? '',
     crea_resp: projeto.dados?.crea_resp ?? profile?.crea ?? '',
-    observacoes: projeto.dados?.observacoes ?? ''
+    observacoes: projeto.dados?.observacoes ?? '',
+    oficio_local: projeto.dados?.oficio_local ?? projeto.dados?.cidade ?? '',
+    oficio_data: projeto.dados?.oficio_data ?? new Date().toISOString().slice(0, 10),
+    memorial_construcao: projeto.dados?.memorial_construcao ?? {},
+    info_operacional: projeto.dados?.info_operacional ?? {},
+    acesso_viaturas: projeto.dados?.acesso_viaturas ?? {},
+    termo_saidas: projeto.dados?.termo_saidas ?? {}
   }));
 
   // Recalcula derivados
@@ -104,8 +114,10 @@ export default function ProjetoForm({ projeto, profile }: { projeto: any; profil
           {etapa === 1 && <Etapa2 dados={dados} up={up} calc={calculados} />}
           {etapa === 2 && <Etapa3 dados={dados} up={up} calc={calculados} />}
           {etapa === 3 && <Etapa4 dados={dados} up={up} calc={calculados} />}
-          {etapa === 4 && <Etapa5 dados={dados} up={up} calc={calculados} />}
-          {etapa === 5 && <Etapa6 dados={dados} up={up} calc={calculados} />}
+          {etapa === 4 && <EtapaCargaIncendio dados={dados} up={up} calc={calculados} />}
+          {etapa === 5 && <Etapa5 dados={dados} up={up} calc={calculados} />}
+          {etapa === 6 && <Etapa6 dados={dados} up={up} calc={calculados} />}
+          {etapa === 7 && <EtapaComplementar dados={dados} up={up} calc={calculados} />}
 
           <div className="mt-8 flex items-center justify-between">
             <button
@@ -912,6 +924,408 @@ function Etapa6({ dados, up, calc }: any) {
         <Field label="Responsável técnico"><input className="input" value={dados.responsavel_tecnico} onChange={e => up('responsavel_tecnico', e.target.value)} /></Field>
         <Field label="CREA / CAU"><input className="input" value={dados.crea_resp} onChange={e => up('crea_resp', e.target.value)} /></Field>
         <Field label="Observações"><textarea className="input min-h-[100px]" value={dados.observacoes} onChange={e => up('observacoes', e.target.value)} /></Field>
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// Etapa 5: Memorial de cálculo da carga de incêndio (média ponderada)
+// =============================================================================
+function EtapaCargaIncendio({ dados, up, calc }: any) {
+  const itens: ItemCargaIncendio[] = Array.isArray(dados.carga_incendio_itens)
+    ? dados.carga_incendio_itens
+    : [];
+  const memCi = calc.carga_incendio_memorial ?? {
+    area_total: 0,
+    ci_total_mj: 0,
+    media_ponderada_mj_m2: 0
+  };
+
+  function setItens(novos: ItemCargaIncendio[]) {
+    up('carga_incendio_itens', novos);
+  }
+  function adicionar() {
+    setItens([...itens, novoItemCargaIncendio({ pavimento_setor: 'TÉRREO' })]);
+  }
+  function remover(id: string) {
+    setItens(itens.filter((i) => i.id !== id));
+  }
+  function atualizar(id: string, campo: keyof ItemCargaIncendio, valor: any) {
+    setItens(itens.map((i) => (i.id === id ? { ...i, [campo]: valor } : i)));
+  }
+  function preencherDoCnae() {
+    if (!dados.divisao || !dados.area_construida_m2) return;
+    if (itens.length > 0) return;
+    setItens([
+      novoItemCargaIncendio({
+        pavimento_setor: 'TÉRREO',
+        ocupacao_descricao: `${dados.descricao_atividade ?? ''} (${dados.divisao ?? ''})`.trim(),
+        divisao: dados.divisao,
+        ci_mj_m2: Number(dados.carga_incendio_mj_m2) || 0,
+        area_m2: Number(dados.area_construida_m2) || 0
+      })
+    ]);
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-xl font-bold">Memorial de cálculo de carga de incêndio</h2>
+        <p className="text-sm text-muted mt-1">
+          Média ponderada por área de cada setor (NPT 014 / Anexo A do CSCIP). Quando
+          preenchido, este memorial substitui o valor pontual da classificação por CNAE.
+        </p>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <button type="button" className="btn-secondary text-xs" onClick={adicionar}>
+          + Adicionar setor
+        </button>
+        {itens.length === 0 && (
+          <button type="button" className="btn-secondary text-xs" onClick={preencherDoCnae}>
+            Iniciar com base no CNAE selecionado
+          </button>
+        )}
+      </div>
+
+      {itens.length === 0 ? (
+        <div className="rounded-md bg-surface border border-border p-4 text-sm text-muted">
+          Nenhum setor cadastrado. Use o CNAE como ponto de partida ou adicione manualmente.
+        </div>
+      ) : (
+        <div className="border border-border rounded-md overflow-auto">
+          <table className="w-full text-xs">
+            <thead className="bg-[#FFF2CC] text-ink">
+              <tr>
+                <th className="p-2 text-left">Pavto / Setor</th>
+                <th className="p-2 text-left">Ocupação</th>
+                <th className="p-2 text-left">Divisão</th>
+                <th className="p-2 text-right">C.I (MJ/m²)</th>
+                <th className="p-2 text-right">Área (m²)</th>
+                <th className="p-2 text-right">C.I total</th>
+                <th className="p-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {itens.map((it) => {
+                const total = (Number(it.ci_mj_m2) || 0) * (Number(it.area_m2) || 0);
+                return (
+                  <tr key={it.id} className="border-t border-border">
+                    <td className="p-1">
+                      <input
+                        className="input text-xs"
+                        value={it.pavimento_setor}
+                        onChange={(e) => atualizar(it.id, 'pavimento_setor', e.target.value)}
+                      />
+                    </td>
+                    <td className="p-1">
+                      <input
+                        className="input text-xs"
+                        value={it.ocupacao_descricao}
+                        onChange={(e) => atualizar(it.id, 'ocupacao_descricao', e.target.value)}
+                        placeholder="Ex.: INDÚSTRIA (I-2)"
+                      />
+                    </td>
+                    <td className="p-1">
+                      <input
+                        className="input text-xs"
+                        value={it.divisao}
+                        onChange={(e) => atualizar(it.id, 'divisao', e.target.value)}
+                        placeholder="I-2"
+                      />
+                    </td>
+                    <td className="p-1">
+                      <input
+                        type="number"
+                        step="any"
+                        className="input text-xs text-right"
+                        value={it.ci_mj_m2}
+                        onChange={(e) => atualizar(it.id, 'ci_mj_m2', Number(e.target.value))}
+                      />
+                    </td>
+                    <td className="p-1">
+                      <input
+                        type="number"
+                        step="any"
+                        className="input text-xs text-right"
+                        value={it.area_m2}
+                        onChange={(e) => atualizar(it.id, 'area_m2', Number(e.target.value))}
+                      />
+                    </td>
+                    <td className="p-2 text-right tabular-nums">{total.toFixed(2)}</td>
+                    <td className="p-1 text-center">
+                      <button
+                        type="button"
+                        onClick={() => remover(it.id)}
+                        className="text-error text-xs px-2"
+                        aria-label="Remover"
+                      >
+                        ✕
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot className="bg-surface">
+              <tr className="border-t-2 border-ink font-semibold">
+                <td className="p-2" colSpan={3}>ÁREA TOTAL</td>
+                <td className="p-2 text-right">—</td>
+                <td className="p-2 text-right tabular-nums">{memCi.area_total.toFixed(2)}</td>
+                <td className="p-2 text-right tabular-nums">{memCi.ci_total_mj.toFixed(0)}</td>
+                <td></td>
+              </tr>
+              <tr className="font-bold bg-[#D5E3D0]">
+                <td className="p-2" colSpan={3}>MÉDIA PONDERADA (C.I MJ/m²)</td>
+                <td className="p-2 text-right" colSpan={3}>
+                  <span className="tabular-nums text-base">
+                    {memCi.media_ponderada_mj_m2.toFixed(2)} MJ/m²
+                  </span>
+                </td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+
+      <div className="rounded-md bg-surface border border-border p-4 text-sm grid sm:grid-cols-3 gap-3">
+        <Info label="Carga de incêndio" value={`${(calc.carga_incendio_mj_m2 ?? 0).toFixed(2)} MJ/m²`} />
+        <Info label="Risco predominante" value={calc.risco_incendio} />
+        <Info label="Área considerada" value={`${memCi.area_total.toFixed(2)} m²`} />
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// Etapa 8: Dados complementares (memorial construção, ofício, inf. operacional, acesso, termo)
+// =============================================================================
+function EtapaComplementar({ dados, up }: any) {
+  const mc = dados.memorial_construcao || {};
+  const io = dados.info_operacional || {};
+  const av = dados.acesso_viaturas || {};
+  const ts = dados.termo_saidas || {};
+  const sis = io.sistemas_instalados || {};
+  const risc = io.riscos_especiais || {};
+
+  function upMc(k: string, v: any) {
+    up('memorial_construcao', { ...mc, [k]: v });
+  }
+  function upIo(k: string, v: any) {
+    up('info_operacional', { ...io, [k]: v });
+  }
+  function upSis(k: string, v: any) {
+    up('info_operacional', { ...io, sistemas_instalados: { ...sis, [k]: v } });
+  }
+  function upRisc(k: string, v: any) {
+    up('info_operacional', { ...io, riscos_especiais: { ...risc, [k]: v } });
+  }
+  function upAv(k: string, v: any) {
+    up('acesso_viaturas', { ...av, [k]: v });
+  }
+  function upTs(k: string, v: any) {
+    up('termo_saidas', { ...ts, [k]: v });
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-bold">Dados complementares</h2>
+        <p className="text-sm text-muted mt-1">
+          Estas informações compõem o ofício de apresentação, o memorial básico
+          de construção, a planilha de informações operacionais, o memorial de
+          acesso a viaturas e o termo de saídas de emergência. Campos em branco
+          serão preenchidos com texto padrão.
+        </p>
+      </div>
+
+      {/* Ofício */}
+      <div className="card">
+        <h3 className="font-semibold text-ink">Ofício de apresentação</h3>
+        <div className="grid sm:grid-cols-2 gap-3 mt-3">
+          <Field label="Local">
+            <input className="input" value={dados.oficio_local || ''} onChange={(e) => up('oficio_local', e.target.value)} />
+          </Field>
+          <Field label="Data">
+            <input type="date" className="input" value={dados.oficio_data || ''} onChange={(e) => up('oficio_data', e.target.value)} />
+          </Field>
+        </div>
+      </div>
+
+      {/* Memorial básico de construção */}
+      <div className="card">
+        <h3 className="font-semibold text-ink">Memorial básico de construção</h3>
+        <div className="grid gap-3 mt-3">
+          <Field label="1. Estruturas" hint="Padrão: concreto armado conforme NBR/ABNT, TRRF atendido.">
+            <textarea className="input" rows={2} value={mc.estruturas || ''} onChange={(e) => upMc('estruturas', e.target.value)} />
+          </Field>
+          <Field label="2. Alvenarias" hint="Padrão: bloco cerâmico/concreto conforme normas.">
+            <textarea className="input" rows={2} value={mc.alvenarias || ''} onChange={(e) => upMc('alvenarias', e.target.value)} />
+          </Field>
+          <Field label="3. Compartimentações">
+            <textarea className="input" rows={2} value={mc.compartimentacoes || ''} onChange={(e) => upMc('compartimentacoes', e.target.value)} />
+          </Field>
+          <Field label="4. Compartimentos">
+            <textarea className="input" rows={2} value={mc.compartimentos || ''} onChange={(e) => upMc('compartimentos', e.target.value)} />
+          </Field>
+          <Field label="5. Instalações">
+            <textarea className="input" rows={2} value={mc.instalacoes || ''} onChange={(e) => upMc('instalacoes', e.target.value)} />
+          </Field>
+          <Field label="6. Vidros">
+            <textarea className="input" rows={2} value={mc.vidros || ''} onChange={(e) => upMc('vidros', e.target.value)} />
+          </Field>
+          <Field label="7. Medidas de segurança contra incêndio (texto livre)">
+            <textarea className="input" rows={3} value={mc.medidas_seguranca || ''} onChange={(e) => upMc('medidas_seguranca', e.target.value)} />
+          </Field>
+        </div>
+      </div>
+
+      {/* Informações operacionais */}
+      <div className="card">
+        <h3 className="font-semibold text-ink">Planilha de informações operacionais</h3>
+        <div className="grid sm:grid-cols-2 gap-3 mt-3">
+          <Field label="Tipo de estrutura">
+            <textarea className="input" rows={2} value={io.tipo_estrutura || ''} onChange={(e) => upIo('tipo_estrutura', e.target.value)} />
+          </Field>
+          <Field label="Acabamento das paredes">
+            <textarea className="input" rows={2} value={io.acabamento_paredes || ''} onChange={(e) => upIo('acabamento_paredes', e.target.value)} />
+          </Field>
+          <Field label="Acabamento dos pisos">
+            <input className="input" value={io.acabamento_pisos || ''} onChange={(e) => upIo('acabamento_pisos', e.target.value)} />
+          </Field>
+          <Field label="Material da cobertura">
+            <input className="input" value={io.cobertura || ''} onChange={(e) => upIo('cobertura', e.target.value)} />
+          </Field>
+          <Field label="População fixa">
+            <input className="input" value={io.populacao_fixa || ''} onChange={(e) => upIo('populacao_fixa', e.target.value)} />
+          </Field>
+          <Field label="População flutuante">
+            <input className="input" value={io.populacao_flutuante || ''} onChange={(e) => upIo('populacao_flutuante', e.target.value)} />
+          </Field>
+          <Field label="Ponto de encontro">
+            <input className="input" value={io.ponto_encontro || ''} onChange={(e) => upIo('ponto_encontro', e.target.value)} />
+          </Field>
+          <Field label="Características de funcionamento">
+            <input className="input" value={io.caracteristicas_funcionamento || ''} onChange={(e) => upIo('caracteristicas_funcionamento', e.target.value)} />
+          </Field>
+          <Field label="Horário de funcionamento">
+            <input className="input" value={io.horario_funcionamento || ''} onChange={(e) => upIo('horario_funcionamento', e.target.value)} />
+          </Field>
+          <Field label="Vias de acesso">
+            <input className="input" value={io.vias_acesso || ''} onChange={(e) => upIo('vias_acesso', e.target.value)} />
+          </Field>
+          <Field label="Nº de brigadistas por turno">
+            <input className="input" value={io.numero_brigadistas || ''} onChange={(e) => upIo('numero_brigadistas', e.target.value)} />
+          </Field>
+          <Field label="Brigadista profissional">
+            <input className="input" value={io.brigadista_profissional || ''} onChange={(e) => upIo('brigadista_profissional', e.target.value)} />
+          </Field>
+          <Field label="Encarregado da segurança">
+            <input className="input" value={io.encarregado_seguranca || ''} onChange={(e) => upIo('encarregado_seguranca', e.target.value)} />
+          </Field>
+          <Field label="Telefone de emergência">
+            <input className="input" value={io.telefone_emergencia || ''} onChange={(e) => upIo('telefone_emergencia', e.target.value)} />
+          </Field>
+          <Field label="Posto de bombeiros mais próximo">
+            <input className="input" value={io.posto_bombeiros || ''} onChange={(e) => upIo('posto_bombeiros', e.target.value)} />
+          </Field>
+          <Field label="Outras informações úteis">
+            <input className="input" value={io.outras_informacoes || ''} onChange={(e) => upIo('outras_informacoes', e.target.value)} />
+          </Field>
+        </div>
+
+        <div className="mt-4">
+          <h4 className="text-sm font-semibold">Sistemas instalados (Sim / Não)</h4>
+          <div className="grid sm:grid-cols-3 gap-2 mt-2 text-sm">
+            {[
+              'Hidrantes', 'Chuveiros automáticos', 'Gás carbônico (CO2)', 'Gases especiais',
+              'Sistema de detecção', 'Grupo moto gerador', 'Escada pressurizada',
+              'Espuma mecânica', 'Sistema de resfriamento', 'Reserva de líquido gerador de espuma',
+              'Bombas de recalque'
+            ].map((nome) => (
+              <label key={nome} className="flex items-center justify-between gap-2 border border-border rounded px-2 py-1">
+                <span className="text-xs">{nome}</span>
+                <select
+                  className="text-xs border border-border rounded px-1"
+                  value={sis[nome] || ''}
+                  onChange={(e) => upSis(nome, e.target.value)}
+                >
+                  <option value="">—</option>
+                  <option value="SIM">SIM</option>
+                  <option value="NÃO">NÃO</option>
+                </select>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid sm:grid-cols-3 gap-3 mt-4">
+          <Field label="Reservatório – consumo (m³)">
+            <input className="input" value={io.reserva_consumo || ''} onChange={(e) => upIo('reserva_consumo', e.target.value)} />
+          </Field>
+          <Field label="Reservatório – RTI (m³)">
+            <input className="input" value={io.reserva_rti || ''} onChange={(e) => upIo('reserva_rti', e.target.value)} />
+          </Field>
+          <Field label="Reservatório – total (m³)">
+            <input className="input" value={io.reserva_total || ''} onChange={(e) => upIo('reserva_total', e.target.value)} />
+          </Field>
+        </div>
+
+        <div className="mt-4">
+          <h4 className="text-sm font-semibold">Riscos especiais (Sim / Não)</h4>
+          <div className="grid sm:grid-cols-3 gap-2 mt-2 text-sm">
+            {[
+              'Caldeiras', 'Sistema de GLP', 'Armazenamento de produtos químicos',
+              'Central de distribuição elétrica', 'Produtos radioativos', 'Espaços confinados'
+            ].map((nome) => (
+              <label key={nome} className="flex items-center justify-between gap-2 border border-border rounded px-2 py-1">
+                <span className="text-xs">{nome}</span>
+                <select
+                  className="text-xs border border-border rounded px-1"
+                  value={risc[nome] || ''}
+                  onChange={(e) => upRisc(nome, e.target.value)}
+                >
+                  <option value="">—</option>
+                  <option value="SIM">SIM</option>
+                  <option value="NÃO">NÃO</option>
+                </select>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <Field label="Outros riscos específicos da atividade">
+          <textarea className="input" rows={2} value={io.outros_riscos || ''} onChange={(e) => upIo('outros_riscos', e.target.value)} />
+        </Field>
+      </div>
+
+      {/* Acesso a viaturas */}
+      <div className="card">
+        <h3 className="font-semibold text-ink">Acesso a viaturas (NPT 006)</h3>
+        <div className="grid sm:grid-cols-3 gap-3 mt-3">
+          <Field label="Largura da via (m)" hint="Mínimo 6,00 m">
+            <input type="number" step="0.1" className="input" value={av.largura_via_m ?? ''} onChange={(e) => upAv('largura_via_m', e.target.value === '' ? null : Number(e.target.value))} />
+          </Field>
+          <Field label="Largura do portão (m)">
+            <input type="number" step="0.1" className="input" value={av.largura_portao_m ?? ''} onChange={(e) => upAv('largura_portao_m', e.target.value === '' ? null : Number(e.target.value))} />
+          </Field>
+          <Field label="Altura do portão (m)">
+            <input type="number" step="0.1" className="input" value={av.altura_portao_m ?? ''} onChange={(e) => upAv('altura_portao_m', e.target.value === '' ? null : Number(e.target.value))} />
+          </Field>
+        </div>
+        <Field label="Observações complementares">
+          <textarea className="input" rows={2} value={av.observacoes || ''} onChange={(e) => upAv('observacoes', e.target.value)} />
+        </Field>
+      </div>
+
+      {/* Termo de saídas */}
+      <div className="card">
+        <h3 className="font-semibold text-ink">Termo de responsabilidade das saídas de emergência</h3>
+        <Field label="Observações do termo" hint="Texto padrão será gerado automaticamente quando vazio.">
+          <textarea className="input" rows={3} value={ts.observacoes || ''} onChange={(e) => upTs('observacoes', e.target.value)} />
+        </Field>
       </div>
     </div>
   );

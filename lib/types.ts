@@ -79,6 +79,9 @@ export type DadosObra = {
   // 4b. Memorial de saídas detalhado (novo modelo NPT 011)
   saidas_pavimentos?: any[]; // Pavimento[] de lib/saidas-npt011.ts
 
+  // 4c. Memorial de carga de incêndio (média ponderada por área)
+  carga_incendio_itens?: any[]; // ItemCargaIncendio[]
+
   // 5. Brigada
   brigadistas_necessarios: number;
   brigadistas_descricao: string;
@@ -88,6 +91,60 @@ export type DadosObra = {
   responsavel_tecnico: string;
   crea_resp: string;
   observacoes: string;
+
+  // 7. Dados complementares (ofício, memorial construção, informações operacionais, acesso, termo)
+  oficio_local?: string;
+  oficio_data?: string;
+  memorial_construcao?: MemorialConstrucao;
+  info_operacional?: InformacoesOperacionais;
+  acesso_viaturas?: AcessoViaturas;
+  termo_saidas?: TermoSaidas;
+};
+
+export type MemorialConstrucao = {
+  estruturas?: string;
+  alvenarias?: string;
+  compartimentacoes?: string;
+  compartimentos?: string;
+  instalacoes?: string;
+  vidros?: string;
+  medidas_seguranca?: string;
+};
+
+export type InformacoesOperacionais = {
+  tipo_estrutura?: string;
+  acabamento_paredes?: string;
+  acabamento_pisos?: string;
+  cobertura?: string;
+  populacao_fixa?: string;
+  populacao_flutuante?: string;
+  ponto_encontro?: string;
+  caracteristicas_funcionamento?: string;
+  horario_funcionamento?: string;
+  vias_acesso?: string;
+  numero_brigadistas?: string;
+  brigadista_profissional?: string;
+  encarregado_seguranca?: string;
+  telefone_emergencia?: string;
+  sistemas_instalados?: Record<string, string>; // mapa de nome→sim/não/detalhe
+  reserva_consumo?: string;
+  reserva_rti?: string;
+  reserva_total?: string;
+  posto_bombeiros?: string;
+  riscos_especiais?: Record<string, string>;
+  outros_riscos?: string;
+  outras_informacoes?: string;
+};
+
+export type AcessoViaturas = {
+  largura_via_m?: number;
+  altura_portao_m?: number;
+  largura_portao_m?: number;
+  observacoes?: string;
+};
+
+export type TermoSaidas = {
+  observacoes?: string;
 };
 
 export type Projeto = {

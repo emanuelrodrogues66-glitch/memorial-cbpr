@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { buscarCnae, calcular, getCnae } from '@/lib/calculos';
+import RevitImportBanner from '@/components/RevitImportBanner';
 import type { CnaeRow, CnaeSelecionado } from '@/lib/types';
 import {
   DATA_SAIDAS,
@@ -479,6 +480,11 @@ function Etapa4({ dados, up, calc }: any) {
           Nenhum pavimento ainda. Clique em "Novo pavimento / bloco" para começar.
         </div>
       )}
+
+      <RevitImportBanner
+        pavimentos={pavs}
+        onLimpar={() => up('saidas_pavimentos', [])}
+      />
 
       {pavs.map((p) => {
         const dim = dims.find((d) => d.pavimento_id === p.id);

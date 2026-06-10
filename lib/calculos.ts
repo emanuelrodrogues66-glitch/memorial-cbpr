@@ -148,14 +148,17 @@ export function unidadesPassagem(divisao: string, populacao: number) {
 // potencialmente exposta, na proporção de 1 brigadista a cada 200 pessoas,
 // considerando-se o número inteiro imediatamente superior.
 // Para o Grupo F (locais de reunião de público) a população é acrescida em 30%.
-export function calcularBrigada(populacao: number, grupo: string | undefined) {
+export function calcularBrigada(populacao: number, grupo: string | undefined, origem?: 'saidas' | 'estimativa') {
   const pop = Math.max(0, Math.ceil(Number(populacao) || 0));
   const isGrupoF = (grupo || '').toUpperCase().trim().startsWith('F');
   const popAjustada = isGrupoF ? Math.ceil(pop * 1.30) : pop;
   const razao = popAjustada / 200;
   const brigadistas = Math.max(1, Math.ceil(razao));
   const partes: string[] = [];
-  partes.push(`População potencialmente exposta: ${pop} pessoa(s).`);
+  const fonte = origem === 'saidas'
+    ? '(soma dos ambientes do memorial de saídas)'
+    : '(estimativa pela área total da divisão principal)';
+  partes.push(`População potencialmente exposta: ${pop} pessoa(s) ${fonte}.`);
   if (isGrupoF) {
     partes.push(`Grupo F (locais de reunião de público): acréscimo de 30% → ${pop} × 1,30 = ${popAjustada} pessoa(s).`);
   }
@@ -241,7 +244,24 @@ export function calcular(dados: any) {
   );
   const up = unidadesPassagem(divisao, pop.valor);
   const grupoPrincipal = cnae?.grupo ?? dados.grupo ?? '';
-  const brig = calcularBrigada(pop.valor, grupoPrincipal);
+
+  // Memorial detalhado de saidas (NPT 011): pavimentos + ambientes
+  const pavs: Pavimento[] = Array.isArray(dados.saidas_pavimentos)
+    ? (dados.saidas_pavimentos as Pavimento[])
+    : [];
+
+  // NPT 017 item 6.2: a brigada usa a populacao potencialmente exposta.
+  // Quando o memorial detalhado de saidas estiver preenchido (pavimentos +
+  // ambientes), usamos a soma real por ambiente (populacao_saidas) em vez
+  // da estimativa por area total da divisao principal. Isso e mais preciso,
+  // respeita ambientes mistos, e bate com o quadro do memorial de saidas.
+  const populacaoSaidasCalc = pavs.length ? populacaoGlobal(pavs) : 0;
+  const populacaoParaBrigada = populacaoSaidasCalc > 0 ? populacaoSaidasCalc : pop.valor;
+  const brig = calcularBrigada(
+    populacaoParaBrigada,
+    grupoPrincipal,
+    populacaoSaidasCalc > 0 ? 'saidas' : 'estimativa'
+  );
   const medidas = sugerirMedidas(
     Number(dados.altura_edificacao_m) || 0,
     Number(dados.area_construida_m2) || 0,
@@ -257,12 +277,8 @@ export function calcular(dados: any) {
       )
     : { medidas: [] as MedidaCSCIP[], simplificada: false };
 
-  // Memorial detalhado de saídas (NPT 011) — quando o usuário preenche pavimentos
-  const pavs: Pavimento[] = Array.isArray(dados.saidas_pavimentos)
-    ? (dados.saidas_pavimentos as Pavimento[])
-    : [];
   const saidas_dimensionamento: DimPavimento[] = pavs.length ? dimensionarTodos(pavs) : [];
-  const populacao_saidas = pavs.length ? populacaoGlobal(pavs) : 0;
+  const populacao_saidas = populacaoSaidasCalc;
 
   // Resumo de ocupação (edificação mista quando houver mais de um CNAE)
   const cnaesArr: any[] = Array.isArray(dados.cnaes) ? dados.cnaes : [];

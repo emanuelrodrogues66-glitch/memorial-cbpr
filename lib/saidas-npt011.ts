@@ -87,6 +87,11 @@ export const DATA_SAIDAS: Record<string, DivCsicipSaida> = {
 };
 
 export const UP_METROS = 0.55;
+// Mínimos definidos pela NPT 011 item 5.3.1 — em UPs (não derivar da largura, pois 1,20 m
+// não é múltiplo exato de 0,55 m). Norma converte: porta 1 UP = 0,80 m, escada/acesso 2 UP = 1,20 m.
+export const MIN_UP_PORTA = 1;
+export const MIN_UP_ESCADA = 2;
+export const MIN_UP_ACESSO = 2;
 export const MIN_LARGURA_PORTA = 0.80; // 1 UP
 export const MIN_LARGURA_ESCADA = 1.20; // 2 UP
 export const MIN_LARGURA_ACESSO = 1.20; // 2 UP
@@ -128,6 +133,12 @@ export const COMPONENTE_MIN_LARGURA: Record<ComponenteSaida, number> = {
   porta: MIN_LARGURA_PORTA,
   escada: MIN_LARGURA_ESCADA,
   acesso: MIN_LARGURA_ACESSO
+};
+
+export const COMPONENTE_MIN_UP: Record<ComponenteSaida, number> = {
+  porta: MIN_UP_PORTA,
+  escada: MIN_UP_ESCADA,
+  acesso: MIN_UP_ACESSO
 };
 
 // === Tipos do estado do formulário ===
@@ -288,29 +299,32 @@ export function dimensionarPavimento(p: Pavimento): DimPavimento {
     const label = COMPONENTE_LABEL[mode];
     const field = COMPONENTE_FIELD[mode];
     const minW = COMPONENTE_MIN_LARGURA[mode];
-    const upMin = Math.ceil(minW / UP_METROS);
+    const upMin = COMPONENTE_MIN_UP[mode]; // 1 UP porta, 2 UP escada/acesso
 
     const por_amb = valid.map(({ a, r }) => {
       const d = DATA_SAIDAS[a.div];
       const C = d[field];
       const upBruto = Math.max(1, ceil(r.pop / C));
-      const upFinal = Math.max(upMin, upBruto);
+      // Por-ambiente é informativo: mostra o cálculo bruto sem aplicar o mínimo agrupado
+      // (o mínimo só vale para o componente final do pavimento, não para cada ambiente)
       return {
         ambiente: a.nome || a.div || 'Ambiente',
         divisao: a.div,
         populacao: r.pop,
         c: C,
         up_bruto: upBruto,
-        up_final: upFinal,
-        largura_m: round2(upFinal * UP_METROS),
-        ajustado_min: upBruto < upMin
+        up_final: upBruto,
+        largura_m: round2(upBruto * UP_METROS),
+        ajustado_min: false
       };
     });
 
     const Cs = valid.map(({ a }) => DATA_SAIDAS[a.div][field]);
     const cCritico = Cs.length ? Math.min(...Cs) : 0;
+    // Total exigido do pavimento: aplica o mínimo da norma apenas no agrupado
     const totalUp = cCritico ? Math.max(upMin, ceil(populacao_total / cCritico)) : 0;
-    const totalLarg = round2(totalUp * UP_METROS);
+    // Largura exigida = máximo entre (UP × 0,55 m) e o mínimo absoluto da norma
+    const totalLarg = Math.max(minW, round2(totalUp * UP_METROS));
 
     return {
       mode,

@@ -3,9 +3,11 @@ import { Document, Page, Text, View, StyleSheet, Image, pdf } from '@react-pdf/r
 import React from 'react';
 import { getMedidasCSCIP } from './cscip-medidas';
 import { dimensionarTodos, DATA_SAIDAS, type Pavimento, type DimPavimento } from './saidas-npt011';
+import { calcularCaminhamento, textoCaminhamento } from './caminhamento-npt011';
 import {
   MEDIDAS_QUADRO_PADRAO,
   medidaAtende,
+  palavraChaveQuadro,
   textoEstruturas,
   textoAlvenarias,
   textoCompartimentacoes,
@@ -209,22 +211,45 @@ function PageClassificacao({ d }: { d: any }) {
         <View style={styles.qmHead}>
           <Text style={styles.qmCellNome}>MEDIDA DE SEGURANÇA</Text>
           <Text style={styles.qmCellNorma}>NORMA APLICÁVEL</Text>
-          <Text style={styles.qmCellSim}>EXIGIDA</Text>
+          <Text style={styles.qmCellSim}>SITUAÇÃO</Text>
         </View>
-        {MEDIDAS_QUADRO_PADRAO.map((m) => {
-          const exigida = medidaAtende(d, m.nome);
-          return (
-            <View key={m.nome} style={styles.qmRow}>
-              <Text style={styles.qmCellNome}>{m.nome}</Text>
-              <Text style={styles.qmCellNorma}>
-                {exigida ? m.norma : 'NÃO SE APLICA'}
+        {(() => {
+          // Mostra somente o que é EXIGIDO ou CONDICIONAL (oculta 'NÃO SE APLICA')
+          const cscip: { nome: string; status: string }[] = d.medidas_cscip || [];
+          const status = (nome: string): 'EXIGIDO' | 'CONDICIONAL' | null => {
+            const chave = palavraChaveQuadro(nome);
+            for (const m of cscip) {
+              if ((m.nome || '').toLowerCase().includes(chave)) {
+                if (m.status === 'EXIGIDO') return 'EXIGIDO';
+                if (m.status === 'CONDICIONAL') return 'CONDICIONAL';
+              }
+            }
+            // Fallback antigo: m.medidas_protecao só marca EXIGIDO
+            if (medidaAtende(d, nome)) return 'EXIGIDO';
+            return null;
+          };
+          const linhas = MEDIDAS_QUADRO_PADRAO
+            .map((m) => ({ ...m, st: status(m.nome) }))
+            .filter((m) => m.st !== null);
+          if (linhas.length === 0) {
+            return (
+              <Text style={[styles.small, { fontStyle: 'normal', marginTop: 6 }]}>
+                Nenhuma medida exigida ou condicionada identificada para esta classificação.
               </Text>
-              <Text style={[styles.qmCellSim, { color: exigida ? '#437A22' : '#A12C7B' }]}>
-                {exigida ? 'SIM' : 'NÃO'}
-              </Text>
-            </View>
-          );
-        })}
+            );
+          }
+          return linhas.map((m) => {
+            const cor = m.st === 'EXIGIDO' ? '#437A22' : '#964219';
+            const rotulo = m.st === 'EXIGIDO' ? 'EXIGIDA' : 'CONDICIONAL';
+            return (
+              <View key={m.nome} style={styles.qmRow}>
+                <Text style={styles.qmCellNome}>{m.nome}</Text>
+                <Text style={styles.qmCellNorma}>{m.norma}</Text>
+                <Text style={[styles.qmCellSim, { color: cor }]}>{rotulo}</Text>
+              </View>
+            );
+          });
+        })()}
       </Page>
   );
 }
@@ -572,9 +597,43 @@ function renderCargaIncendio(d: any) {
 // ============================================================================
 function renderSaidasPdf(d: any) {
   const pavs: Pavimento[] = Array.isArray(d.saidas_pavimentos) ? d.saidas_pavimentos : [];
+
+  // Bloco de caminhamento (Tabela 2 NPT 011) — sempre no início do memorial
+  const divisaoPrincipal: string = d.divisao || '';
+  const medidasCscip: { nome: string; status: string }[] = d.medidas_cscip || [];
+  const temMedida = (chave: string) =>
+    medidasCscip.some(
+      (m) => m.status === 'EXIGIDO' && (m.nome || '').toLowerCase().includes(chave)
+    );
+  const camin = divisaoPrincipal
+    ? calcularCaminhamento({
+        divisao_principal: divisaoPrincipal,
+        com_sprinkler: temMedida('chuveiro'),
+        com_deteccao_fumaca: temMedida('detec'),
+        leiaute_apresentado: false,
+      })
+    : null;
+  const blocoCaminhamento = camin ? (
+    <View
+      style={{
+        marginBottom: 10,
+        padding: 8,
+        borderWidth: 1,
+        borderColor: '#D4D1CA',
+        borderRadius: 4,
+      }}
+    >
+      <Text style={[styles.small, { fontWeight: 'bold', marginBottom: 3 }]}>
+        Caminhamento conforme ocupação principal ({divisaoPrincipal} — faixa {camin.rotulo_faixa})
+      </Text>
+      <Text style={styles.pJustify}>{textoCaminhamento(camin)}</Text>
+    </View>
+  ) : null;
+
   if (pavs.length === 0) {
     return (
       <>
+        {blocoCaminhamento}
         <Linha k="População" v={d.populacao_calculada} />
         <Linha k="Critério" v={d.populacao_descricao_npt011} />
         <Linha k="Unid. passagem — acesso/descarga" v={d.unidades_passagem_acesso} />
@@ -586,6 +645,7 @@ function renderSaidasPdf(d: any) {
   const dims: DimPavimento[] = dimensionarTodos(pavs);
   return (
     <>
+      {blocoCaminhamento}
       {dims.map((dim) => (
         <View key={dim.pavimento_id} wrap={false} style={{ marginBottom: 10 }}>
           <Text style={styles.h3}>{dim.label}</Text>

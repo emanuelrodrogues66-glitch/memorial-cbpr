@@ -125,6 +125,10 @@ export function medidaAtende(d: any, nomeQuadro: string): boolean {
   return false;
 }
 
+export function palavraChaveQuadro(nome: string): string {
+  return palavraChave(nome.toLowerCase());
+}
+
 function palavraChave(nome: string): string {
   if (nome.includes('alarme')) return 'alarme';
   if (nome.includes('brigada')) return 'brigada';

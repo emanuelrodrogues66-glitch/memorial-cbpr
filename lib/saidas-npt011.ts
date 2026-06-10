@@ -159,8 +159,28 @@ export type Pavimento = {
 
 // === Funções de cálculo ===
 
+// Arredondamento matemático (>=0,5 sobe). Usado para POPULAÇÃO conforme regra do Emanuel.
+function roundMat(n: number) {
+  return Math.round(n);
+}
+
+// Teto, usado para número de UPs (sempre arredondar para cima)
 function ceil(n: number) {
   return Math.ceil(n);
+}
+
+// Ambiente é considerado "vazio" (não entra no memorial) se não tem ocupação definida
+// ou se a área líquida é zero/negativa
+export function ambienteTemOcupacao(a: Ambiente): boolean {
+  const div = (a.div || '').trim();
+  if (!div) return false;
+  if (!DATA_SAIDAS[div]) return false;
+  const area = Number(a.area) || 0;
+  const excl = Number(a.excluir) || 0;
+  const net = Math.max(0, area - excl);
+  // Para vagas, a área é a referência direta
+  if (DATA_SAIDAS[div].special === 'vagas') return area > 0;
+  return net > 0;
 }
 
 export function calcularPopulacaoAmbiente(
@@ -182,10 +202,10 @@ export function calcularPopulacaoAmbiente(
     };
   }
   if (d.special === 'vagas') {
-    return { pop: ceil(area / 40), net: area, unit: 'vagas', ok: true };
+    return { pop: roundMat(area / 40), net: area, unit: 'vagas', ok: true };
   }
   if (d.coef == null) return null;
-  return { pop: ceil(net * d.coef), net, unit: 'm²', ok: true };
+  return { pop: roundMat(net * d.coef), net, unit: 'm²', ok: true };
 }
 
 export type DimComponente = {
@@ -237,7 +257,9 @@ export type VerificacaoPavimento = {
 };
 
 export function dimensionarPavimento(p: Pavimento): DimPavimento {
-  const populadosResultados = p.ambientes.map((a) => ({
+  // Filtra ambientes sem ocupação (campo vazio não vai para o memorial)
+  const ambientesValidos = p.ambientes.filter(ambienteTemOcupacao);
+  const populadosResultados = ambientesValidos.map((a) => ({
     a,
     r: calcularPopulacaoAmbiente(a)
   }));
@@ -301,25 +323,29 @@ export function dimensionarPavimento(p: Pavimento): DimPavimento {
     };
   });
 
-  // Verificação: saídas reais vs UP exigida
+  // Verificação: somatório das UPs reais por TIPO. Cada elemento real contribui com
+  // floor(largura / UP) UPs, pois só UPs inteiras são contadas (item 5.4.1 NPT 011).
+  // Em seguida, o total é comparado com o UP exigido do bloco/pavimento.
   const verificacao: VerificacaoPavimento[] = dimensionamento.map((dim) => {
     const reais = p.saidas_reais.filter((s) => s.tipo === dim.mode);
     const larguraReal = reais.reduce(
       (s, x) => s + (Number(x.largura_m) || 0) * (Number(x.quantidade) || 0),
       0
     );
-    const upReal = Math.floor(round2(larguraReal) / UP_METROS); // UPs cabem inteiramente
+    // SOMA das UPs por elemento (cada elemento arredondado para baixo na sua UP)
+    const upReal = reais.reduce((s, x) => {
+      const upPorElemento = Math.floor((Number(x.largura_m) || 0) / UP_METROS);
+      return s + upPorElemento * (Number(x.quantidade) || 0);
+    }, 0);
     const qtd = reais.reduce((s, x) => s + (Number(x.quantidade) || 0), 0);
     const detalhes =
       reais.length === 0
         ? 'Nenhum elemento informado'
         : reais
-            .map(
-              (x) =>
-                `${x.identificacao || COMPONENTE_LABEL[x.tipo]} ${round2(x.largura_m)} m × ${
-                  x.quantidade
-                }`
-            )
+            .map((x) => {
+              const upEl = Math.floor((Number(x.largura_m) || 0) / UP_METROS);
+              return `${x.identificacao || COMPONENTE_LABEL[x.tipo]} ${round2(x.largura_m)} m × ${x.quantidade} (${upEl} UP cada)`;
+            })
             .join(' • ');
     return {
       tipo: dim.mode,

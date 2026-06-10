@@ -32,14 +32,25 @@ export async function GET(_req: NextRequest, ctx: { params: { cnpj: string } }) 
     const cnaePrincipal = String(data.cnae_fiscal || '');
     const cnaeFormatado = formatarCnae(cnaePrincipal);
 
+    const enderecoCompleto = [
+      data.logradouro,
+      data.numero,
+      data.complemento,
+      data.bairro
+    ].filter(Boolean).join(', ');
+
     return NextResponse.json({
       cnpj,
       razao_social: data.razao_social || '',
       nome_fantasia: data.nome_fantasia || '',
       cnae_principal: cnaeFormatado,
       cnae_principal_descricao: data.cnae_fiscal_descricao || '',
+      endereco: enderecoCompleto,
       cidade: data.municipio || '',
       uf: data.uf || '',
+      cep: formatarCep(String(data.cep || '')),
+      telefone: formatarTelefone(String(data.ddd_telefone_1 || '')),
+      email: data.email || '',
       situacao: data.descricao_situacao_cadastral || '',
       porte: data.porte || '',
       cnaes_secundarios: Array.isArray(data.cnaes_secundarios)
@@ -62,4 +73,19 @@ function formatarCnae(c: string): string {
   const d = c.replace(/\D/g, '');
   if (d.length !== 7) return c;
   return `${d.slice(0, 4)}-${d.slice(4, 5)}/${d.slice(5, 7)}`;
+}
+
+// 80000000 -> 80000-000
+function formatarCep(c: string): string {
+  const d = c.replace(/\D/g, '');
+  if (d.length !== 8) return c;
+  return `${d.slice(0, 5)}-${d.slice(5)}`;
+}
+
+// 4399999999 -> (43) 99999-9999  ou  4332220000 -> (43) 3222-0000
+function formatarTelefone(t: string): string {
+  const d = t.replace(/\D/g, '');
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return t;
 }

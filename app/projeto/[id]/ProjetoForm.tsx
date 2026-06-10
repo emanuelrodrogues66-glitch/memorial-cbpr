@@ -199,17 +199,63 @@ function Field({ label, children, hint }: { label: string; children: React.React
 }
 
 function Etapa1({ dados, up }: any) {
+  const [buscandoCnpj, setBuscandoCnpj] = useState(false);
+  const [erroCnpj, setErroCnpj] = useState<string | null>(null);
+  const [okCnpj, setOkCnpj] = useState<string | null>(null);
+
+  const buscarCnpj = async () => {
+    setErroCnpj(null);
+    setOkCnpj(null);
+    const limpo = (dados.cpf_cnpj || '').replace(/\D/g, '');
+    if (limpo.length !== 14) {
+      setErroCnpj('Informe um CNPJ com 14 dígitos');
+      return;
+    }
+    setBuscandoCnpj(true);
+    try {
+      const res = await fetch(`/api/cnpj/${limpo}`);
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || 'CNPJ não encontrado');
+      }
+      const j = await res.json();
+      // Só substitui campos vazios (preserva edição manual do usuário)
+      if (j.razao_social && !dados.proprietario) up('proprietario', j.razao_social);
+      if (j.endereco && !dados.endereco) up('endereco', j.endereco);
+      if (j.cidade && !dados.cidade) up('cidade', j.cidade);
+      if (j.uf && !dados.uf) up('uf', j.uf);
+      if (j.cep && !dados.cep) up('cep', j.cep);
+      if (j.telefone && !dados.telefone) up('telefone', j.telefone);
+      if (j.email && !dados.email_contato) up('email_contato', j.email);
+      const camposPreenchidos = [j.razao_social, j.endereco, j.cidade].filter(Boolean).length;
+      setOkCnpj(`Dados carregados (${camposPreenchidos} campos). Edite à vontade.`);
+    } catch (err) {
+      setErroCnpj(err instanceof Error ? err.message : 'Erro ao buscar CNPJ');
+    } finally {
+      setBuscandoCnpj(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-bold">Dados da obra</h2>
-      <p className="text-sm text-muted">Identifique a edificação e o proprietário.</p>
+      <p className="text-sm text-muted">Identifique a edificação e o proprietário. Os campos buscados pelo CNPJ podem ser substituídos manualmente.</p>
       <div className="grid sm:grid-cols-2 gap-3">
         <Field label="Nome da obra"><input className="input" value={dados.nome_obra} onChange={e => up('nome_obra', e.target.value)} /></Field>
         <Field label="Proprietário / Razão Social"><input className="input" value={dados.proprietario} onChange={e => up('proprietario', e.target.value)} /></Field>
-        <Field label="CPF / CNPJ"><input className="input" value={dados.cpf_cnpj} onChange={e => up('cpf_cnpj', e.target.value)} /></Field>
+        <Field label="CPF / CNPJ">
+          <div className="flex gap-2">
+            <input className="input flex-1" value={dados.cpf_cnpj} onChange={e => up('cpf_cnpj', e.target.value)} placeholder="00.000.000/0000-00" />
+            <button type="button" onClick={buscarCnpj} disabled={buscandoCnpj} className="btn-secondary whitespace-nowrap disabled:opacity-50">
+              {buscandoCnpj ? 'Buscando...' : 'Buscar dados'}
+            </button>
+          </div>
+          {erroCnpj && <p className="text-xs text-danger mt-1">{erroCnpj}</p>}
+          {okCnpj && <p className="text-xs text-success mt-1">{okCnpj}</p>}
+        </Field>
         <Field label="Inscrição Imobiliária"><input className="input" value={dados.inscricao_imobiliaria} onChange={e => up('inscricao_imobiliaria', e.target.value)} /></Field>
-        <Field label="Telefone"><input className="input" value={dados.telefone} onChange={e => up('telefone', e.target.value)} /></Field>
-        <Field label="E-mail de contato"><input type="email" className="input" value={dados.email_contato} onChange={e => up('email_contato', e.target.value)} /></Field>
+        <Field label="Telefone (opcional)"><input className="input" value={dados.telefone} onChange={e => up('telefone', e.target.value)} /></Field>
+        <Field label="E-mail de contato (opcional)"><input type="email" className="input" value={dados.email_contato} onChange={e => up('email_contato', e.target.value)} /></Field>
         <Field label="Endereço"><input className="input" value={dados.endereco} onChange={e => up('endereco', e.target.value)} /></Field>
         <Field label="Cidade"><input className="input" value={dados.cidade} onChange={e => up('cidade', e.target.value)} /></Field>
         <Field label="UF"><input className="input" value={dados.uf} onChange={e => up('uf', e.target.value.toUpperCase().slice(0, 2))} /></Field>

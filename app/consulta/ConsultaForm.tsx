@@ -643,7 +643,7 @@ function ResultadoView({
           </p>
           <a
             href={`https://wa.me/${(process.env.NEXT_PUBLIC_WHATSAPP_PUBLICO || '5543998439725').replace(/\D/g, '')}?text=${encodeURIComponent(
-              `Olá, fiz a consulta no site. Minha edificação ${dadosEnviados.divisao} (${dadosEnviados.area} m², ${dadosEnviados.altura} m) precisa de ${rotuloModalidade(classificacao.modalidade)}. Gostaria de orçamento.`
+              `Olá, fiz a consulta no site. Minha edificação ${dadosEnviados.divisao} (${dadosEnviados.area} m², ${dadosEnviados.altura} m) precisa de ${rotuloModalidade(classificacao.modalidade)}. Gostaria de uma consultoria técnica sem custo.`
             )}`}
             target="_blank"
             rel="noopener noreferrer"

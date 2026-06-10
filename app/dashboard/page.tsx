@@ -32,6 +32,9 @@ export default async function Dashboard() {
             <nav className="flex gap-4 text-sm">
               <Link href="/dashboard" className="text-ink hover:text-primary">Projetos</Link>
               <Link href="/leads" className="text-muted hover:text-ink">Leads</Link>
+              {(user.email || '').toLowerCase() === 'emanuelrodrogues66@gmail.com' && (
+                <Link href="/admin" className="text-muted hover:text-ink">Administração</Link>
+              )}
             </nav>
           </div>
           <div className="flex items-center gap-3">

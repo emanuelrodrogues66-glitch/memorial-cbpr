@@ -12,9 +12,6 @@ export default function ConsultaPage() {
       <header className="border-b border-border bg-white">
         <div className="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="font-semibold text-ink">Memorial CBPR</Link>
-          <nav className="flex gap-3">
-            <Link href="/login" className="btn-secondary text-sm">Sou cliente cadastrado</Link>
-          </nav>
         </div>
       </header>
 

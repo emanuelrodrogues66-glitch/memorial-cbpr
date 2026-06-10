@@ -25,6 +25,7 @@ export default function ConsultaForm() {
   const [nome, setNome] = useState('');
   const [telefone, setTelefone] = useState('');
   const [email, setEmail] = useState('');
+  const [aceitouLgpd, setAceitouLgpd] = useState(false);
   const [cnpj, setCnpj] = useState('');
   const [razaoSocial, setRazaoSocial] = useState('');
   const [buscandoCnpj, setBuscandoCnpj] = useState(false);
@@ -108,6 +109,10 @@ export default function ConsultaForm() {
     }
     if (!telefone.trim() || telefone.replace(/\D/g, '').length < 10) {
       setErro('Informe um telefone válido com DDD');
+      return;
+    }
+    if (!aceitouLgpd) {
+      setErro('Você precisa concordar com a Política de Privacidade (LGPD) para continuar');
       return;
     }
     if (email && !/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
@@ -249,6 +254,18 @@ export default function ConsultaForm() {
                 <p className="text-xs text-success mt-1">Empresa: {razaoSocial}</p>
               )}
             </Field>
+
+            <label className="flex items-start gap-3 p-4 rounded-lg border border-border bg-bg cursor-pointer hover:border-primary transition-colors">
+              <input
+                type="checkbox"
+                checked={aceitouLgpd}
+                onChange={(e) => setAceitouLgpd(e.target.checked)}
+                className="mt-1 w-4 h-4 accent-primary cursor-pointer"
+              />
+              <span className="text-sm text-muted leading-relaxed">
+                Concordo com o tratamento dos meus dados pessoais (nome, telefone, email e dados da edificação) para fins de retorno comercial sobre esta consulta, conforme a <span className="text-ink font-medium">Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018)</span>. Posso solicitar exclusão dos meus dados a qualquer momento pelo WhatsApp informado.
+              </span>
+            </label>
 
             {erro && <Erro>{erro}</Erro>}
 
@@ -625,7 +642,7 @@ function ResultadoView({
             Elaboramos toda a documentação conforme NPT 001, 005, 008, 011 e 017, pronta para protocolar.
           </p>
           <a
-            href={`https://wa.me/${(process.env.NEXT_PUBLIC_WHATSAPP_PUBLICO || '5541999999999').replace(/\D/g, '')}?text=${encodeURIComponent(
+            href={`https://wa.me/${(process.env.NEXT_PUBLIC_WHATSAPP_PUBLICO || '5543998439725').replace(/\D/g, '')}?text=${encodeURIComponent(
               `Olá, fiz a consulta no site. Minha edificação ${dadosEnviados.divisao} (${dadosEnviados.area} m², ${dadosEnviados.altura} m) precisa de ${rotuloModalidade(classificacao.modalidade)}. Gostaria de orçamento.`
             )}`}
             target="_blank"

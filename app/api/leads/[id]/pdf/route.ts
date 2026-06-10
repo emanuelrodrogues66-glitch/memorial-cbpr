@@ -29,16 +29,24 @@ export async function GET(_req: NextRequest, ctx: { params: { id: string } }) {
   try {
     const pdf = await gerarPdfLead({
       nome: data.nome,
+      telefone: data.telefone,
+      email: data.email,
       contato: data.contato,
       cnpj: data.cnpj,
+      razao_social: data.razao_social,
       cnae: data.cnae,
       cnae_descricao: data.cnae_descricao,
       divisao: data.divisao,
       area_m2: Number(data.area_m2),
       altura_m: Number(data.altura_m),
       cidade: data.cidade,
+      ano_construcao: data.ano_construcao,
+      populacao: data.populacao,
       medidas: data.medidas || [],
       simplificada: !!data.simplificada,
+      modalidade: data.modalidade,
+      tipo_edificacao: data.tipo_edificacao,
+      justificativas: data.justificativas || [],
       created_at: data.created_at
     });
 

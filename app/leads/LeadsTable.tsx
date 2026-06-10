@@ -8,16 +8,40 @@ type Lead = {
   created_at: string;
   nome: string;
   contato: string;
+  telefone?: string | null;
+  email?: string | null;
   cnpj: string | null;
+  razao_social?: string | null;
   cnae: string | null;
   cnae_descricao: string | null;
   divisao: string;
   area_m2: number;
   altura_m: number;
   cidade: string | null;
+  ano_construcao?: number | null;
+  populacao?: number | null;
   medidas: any[];
   simplificada: boolean;
   status: string;
+  modalidade?: string | null;
+  tipo_edificacao?: string | null;
+  justificativas?: string[] | null;
+};
+
+const ROTULO_MOD: Record<string, string> = {
+  DISPENSA: 'Dispensada',
+  MEMORIAL_SIMPLIFICADO: 'Memorial Simplificado',
+  PTPID: 'PTPID',
+  PTPID_IOT: 'PTPID-IOT',
+  ANALISE_NPT002: 'Análise NPT 002'
+};
+
+const COR_MOD: Record<string, string> = {
+  DISPENSA: 'bg-success/10 text-success',
+  MEMORIAL_SIMPLIFICADO: 'bg-primary/10 text-primary',
+  PTPID: 'bg-danger/10 text-danger',
+  PTPID_IOT: 'bg-warning/10 text-warning',
+  ANALISE_NPT002: 'bg-warning/10 text-warning'
 };
 
 export default function LeadsTable({ leads }: { leads: Lead[] }) {
@@ -88,6 +112,7 @@ export default function LeadsTable({ leads }: { leads: Lead[] }) {
                 <th className="text-left px-4 py-3 font-medium text-muted">Cliente</th>
                 <th className="text-left px-4 py-3 font-medium text-muted">Contato</th>
                 <th className="text-left px-4 py-3 font-medium text-muted">Divisão</th>
+                <th className="text-left px-4 py-3 font-medium text-muted">Modalidade</th>
                 <th className="text-left px-4 py-3 font-medium text-muted">Área</th>
                 <th className="text-left px-4 py-3 font-medium text-muted">Cidade</th>
                 <th className="text-left px-4 py-3 font-medium text-muted">Status</th>
@@ -103,6 +128,13 @@ export default function LeadsTable({ leads }: { leads: Lead[] }) {
                   <td className="px-4 py-3 font-medium text-ink">{l.nome}</td>
                   <td className="px-4 py-3 text-muted">{l.contato}</td>
                   <td className="px-4 py-3"><Badge>{l.divisao}</Badge></td>
+                  <td className="px-4 py-3">
+                    {l.modalidade ? (
+                      <span className={`inline-block text-xs font-semibold px-2 py-0.5 rounded ${COR_MOD[l.modalidade] || 'bg-muted/10 text-muted'}`}>
+                        {ROTULO_MOD[l.modalidade] || l.modalidade}
+                      </span>
+                    ) : <span className="text-muted text-xs">—</span>}
+                  </td>
                   <td className="px-4 py-3 text-muted">{l.area_m2} m²</td>
                   <td className="px-4 py-3 text-muted">{l.cidade || '—'}</td>
                   <td className="px-4 py-3">
@@ -168,10 +200,26 @@ function LeadDetalhe({ lead, onFechar }: { lead: Lead; onFechar: () => void }) {
         </div>
 
         <div className="p-6 space-y-5">
+          {lead.modalidade && (
+            <div className={`p-4 rounded-lg ${COR_MOD[lead.modalidade] || 'bg-muted/10 text-muted'}`}>
+              <div className="text-xs uppercase font-semibold opacity-70">Modalidade exigida</div>
+              <div className="text-xl font-bold mt-1">{ROTULO_MOD[lead.modalidade] || lead.modalidade}</div>
+              {lead.tipo_edificacao && <div className="text-xs mt-1 opacity-70">Tipo: {lead.tipo_edificacao}</div>}
+              {lead.justificativas && lead.justificativas.length > 0 && (
+                <ul className="text-sm mt-2 space-y-1">
+                  {lead.justificativas.map((j, i) => <li key={i}>• {j}</li>)}
+                </ul>
+              )}
+            </div>
+          )}
+
           <Bloco titulo="Cliente">
             <Info label="Nome" value={lead.nome} />
-            <Info label="Contato" value={lead.contato} />
+            {lead.telefone && <Info label="Telefone" value={lead.telefone} />}
+            {lead.email && <Info label="Email" value={lead.email} />}
+            {!lead.telefone && !lead.email && <Info label="Contato" value={lead.contato} />}
             {lead.cnpj && <Info label="CNPJ" value={lead.cnpj} />}
+            {lead.razao_social && <Info label="Empresa" value={lead.razao_social} />}
             <Info label="Data" value={new Date(lead.created_at).toLocaleString('pt-BR')} />
           </Bloco>
 
@@ -218,12 +266,12 @@ function LeadDetalhe({ lead, onFechar }: { lead: Lead; onFechar: () => void }) {
               Ver PDF
             </Link>
             <a
-              href={`https://wa.me/${(lead.contato.match(/\d+/g) || []).join('').replace(/^0/, '55') || '5541999999999'}`}
+              href={`https://wa.me/55${((lead.telefone || lead.contato).match(/\d+/g) || []).join('').replace(/^55/, '')}`}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-primary ml-auto"
             >
-              Contatar
+              WhatsApp
             </a>
           </div>
         </div>

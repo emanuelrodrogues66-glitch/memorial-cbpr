@@ -22,6 +22,22 @@ export default function CadastroPage() {
   async function cadastrar(e: React.FormEvent) {
     e.preventDefault();
     setErr(null); setMsg(null); setBusy(true);
+
+    // Trava: so emails na allowlist podem se cadastrar
+    const { data: allowed, error: rpcErr } = await supabase.rpc('email_is_allowed', {
+      p_email: form.email
+    });
+    if (rpcErr) {
+      setBusy(false);
+      setErr('Erro ao validar email: ' + rpcErr.message);
+      return;
+    }
+    if (!allowed) {
+      setBusy(false);
+      setErr('Cadastros novos estão fechados. Entre em contato com o administrador.');
+      return;
+    }
+
     const { error, data } = await supabase.auth.signUp({
       email: form.email,
       password: form.pwd,
@@ -65,7 +81,7 @@ export default function CadastroPage() {
       <form onSubmit={cadastrar} className="card w-full max-w-lg space-y-4">
         <div>
           <h1 className="text-2xl font-bold text-ink">Criar conta</h1>
-          <p className="text-sm text-muted mt-1">Para profissionais habilitados (CREA/CAU).</p>
+          <p className="text-sm text-muted mt-1">Acesso restrito por convite. Solicite ao administrador.</p>
         </div>
         <div className="grid sm:grid-cols-2 gap-3">
           <div className="field-group sm:col-span-2">

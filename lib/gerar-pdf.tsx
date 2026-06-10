@@ -305,6 +305,7 @@ function PageSaidas({ d }: { d: any }) {
       <Page size="A4" style={styles.page}>
         <Text style={styles.h1}>Memorial de saídas de emergência (NPT 011)</Text>
         {renderSaidasPdf(d)}
+        <Assinatura d={d} />
       </Page>
   );
 }
@@ -659,7 +660,7 @@ function renderSaidasPdf(d: any) {
           </View>
           {dim.por_ambiente.map((a) => (
             <View key={a.id} style={styles.tableRow}>
-              <Text style={styles.cellL}>{a.nome}</Text>
+              <Text style={styles.cellL}>{limparNomeAmbiente(a.nome)}</Text>
               <Text style={[styles.cellR, { width: '22%' }]}>{a.divisao}</Text>
               <Text style={styles.cellR}>{a.net.toFixed(2)}</Text>
               <Text style={[styles.cellR, { width: '22%' }]}>{popDesc(a.divisao)}</Text>
@@ -744,6 +745,26 @@ function renderSaidasPdf(d: any) {
 
 function popDesc(divisao: string): string {
   return DATA_SAIDAS[divisao]?.pop ?? '—';
+}
+
+// Remove códigos/IDs que costumam vir como prefixo do nome do ambiente,
+// principalmente quando importado do Revit. Mantém apenas o nome legível.
+// Exemplos: '001 - Sala' -> 'Sala', 'AMB-12 Recepção' -> 'Recepção',
+// 'Room 12: Sala' -> 'Sala', '12 - Sala' -> 'Sala'
+function limparNomeAmbiente(nome: string): string {
+  if (!nome) return nome;
+  let s = String(nome).trim();
+  // Padrões de prefixo: códigos alfa-numéricos seguidos de separador (-, :, –, espaço duplo)
+  // Roda várias vezes para casos como '001 - AMB-12 - Sala'
+  for (let i = 0; i < 3; i++) {
+    const m = s.match(/^(?:AMB[-_ ]?|ROOM[-_ ]?|SALA[-_ ]?|\d+|[A-Z]{1,3}[-_ ]?\d+)\s*[-:–_\.]?\s+(.+)$/i);
+    if (m && m[1] && m[1].length < s.length) {
+      s = m[1].trim();
+    } else {
+      break;
+    }
+  }
+  return s || nome;
 }
 
 export async function gerarPdfBlob(d: any, secoes?: SecaoMemorial[]): Promise<Blob> {

@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import NovoProjetoButton from './NovoProjetoButton';
 import LogoutButton from './LogoutButton';
 import DuplicarProjetoButton from './DuplicarProjetoButton';
+import ExcluirProjetoButton from './ExcluirProjetoButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -82,6 +83,7 @@ export default async function Dashboard() {
                   {p.status}
                 </span>
                 <DuplicarProjetoButton projetoId={p.id} nomeAtual={p.nome_obra || ''} />
+                <ExcluirProjetoButton projetoId={p.id} nomeAtual={p.nome_obra || ''} />
               </div>
             </div>
           ))}

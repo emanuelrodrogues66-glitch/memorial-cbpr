@@ -530,6 +530,25 @@ function Etapa4({ dados, up, calc, projetoId, revitToken }: any) {
         </p>
       </div>
 
+      <div className="rounded-md border border-border bg-surface p-4">
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={Boolean(dados.leiaute_apresentado)}
+            onChange={(e) => up('leiaute_apresentado', e.target.checked)}
+            className="mt-1 h-4 w-4"
+          />
+          <div className="text-sm">
+            <div className="font-semibold text-ink">Leiaute (layout) apresentado em projeto</div>
+            <div className="text-muted mt-0.5">
+              Marque quando o projeto apresenta o leiaute de mobiliário/ocupação. Mantém o
+              caminhamento integral da Tabela 2 (Anexo B NPT 011). Desmarcado aplica a redução
+              de 30% prevista para projetos sem leiaute (Nota B / Tabela 2A).
+            </div>
+          </div>
+        </label>
+      </div>
+
       {pavs.length === 0 && (
         <div className="rounded-md border border-dashed border-border bg-surface p-4 text-sm text-muted">
           Nenhum pavimento ainda. Clique em "Novo pavimento / bloco" para começar.

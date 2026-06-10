@@ -610,7 +610,7 @@ function renderSaidasPdf(d: any) {
         divisao_principal: divisaoPrincipal,
         com_sprinkler: temMedida('chuveiro'),
         com_deteccao_fumaca: temMedida('detec'),
-        leiaute_apresentado: false,
+        leiaute_apresentado: Boolean(d.leiaute_apresentado),
       })
     : null;
   const blocoCaminhamento = camin ? (

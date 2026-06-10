@@ -27,7 +27,13 @@ export default async function Dashboard() {
     <main className="min-h-screen">
       <header className="border-b border-border bg-white">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="font-semibold text-ink">Memorial CBPR</div>
+          <div className="flex items-center gap-6">
+            <Link href="/dashboard" className="font-semibold text-ink">Memorial CBPR</Link>
+            <nav className="flex gap-4 text-sm">
+              <Link href="/dashboard" className="text-ink hover:text-primary">Projetos</Link>
+              <Link href="/leads" className="text-muted hover:text-ink">Leads</Link>
+            </nav>
+          </div>
           <div className="flex items-center gap-3">
             <Link href="/perfil" className="text-sm text-muted hover:text-ink">
               {profile?.full_name || user.email}

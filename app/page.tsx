@@ -12,7 +12,8 @@ export default async function Home() {
       <header className="border-b border-border bg-white">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="font-semibold text-ink">Memorial CBPR</div>
-          <nav className="flex gap-3">
+          <nav className="flex gap-3 items-center">
+            <Link href="/consulta" className="text-sm text-primary hover:underline">Consulta gratuita</Link>
             <Link href="/login" className="btn-secondary">Entrar</Link>
             <Link href="/cadastro" className="btn-primary">Criar conta</Link>
           </nav>

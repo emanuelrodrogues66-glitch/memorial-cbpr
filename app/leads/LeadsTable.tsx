@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 type Lead = {
@@ -44,11 +45,60 @@ const COR_MOD: Record<string, string> = {
   ANALISE_NPT002: 'bg-warning/10 text-warning'
 };
 
+const STATUS_LISTA = [
+  { value: 'novo', label: 'Novo' },
+  { value: 'contatado', label: 'Contatado' },
+  { value: 'convertido', label: 'Convertido' },
+  { value: 'descartado', label: 'Descartado' }
+] as const;
+
 export default function LeadsTable({ leads }: { leads: Lead[] }) {
+  const router = useRouter();
+  const [, startTransition] = useTransition();
   const [filtro, setFiltro] = useState('');
   const [cidade, setCidade] = useState('');
   const [statusFiltro, setStatusFiltro] = useState('');
   const [selecionado, setSelecionado] = useState<Lead | null>(null);
+  const [acaoEmAndamento, setAcaoEmAndamento] = useState<string | null>(null);
+
+  async function mudarStatus(id: string, novoStatus: string) {
+    setAcaoEmAndamento(id);
+    try {
+      const res = await fetch(`/api/leads/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: novoStatus })
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        alert(`Erro ao atualizar: ${j.error || res.statusText}`);
+        return;
+      }
+      if (selecionado?.id === id) {
+        setSelecionado({ ...selecionado, status: novoStatus });
+      }
+      startTransition(() => router.refresh());
+    } finally {
+      setAcaoEmAndamento(null);
+    }
+  }
+
+  async function excluir(id: string, nome: string) {
+    if (!confirm(`Excluir o lead de ${nome}? Esta ação não pode ser desfeita.`)) return;
+    setAcaoEmAndamento(id);
+    try {
+      const res = await fetch(`/api/leads/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        alert(`Erro ao excluir: ${j.error || res.statusText}`);
+        return;
+      }
+      if (selecionado?.id === id) setSelecionado(null);
+      startTransition(() => router.refresh());
+    } finally {
+      setAcaoEmAndamento(null);
+    }
+  }
 
   const cidades = useMemo(
     () => Array.from(new Set(leads.map((l) => l.cidade).filter(Boolean))).sort() as string[],
@@ -138,14 +188,31 @@ export default function LeadsTable({ leads }: { leads: Lead[] }) {
                   <td className="px-4 py-3 text-muted">{l.area_m2} m²</td>
                   <td className="px-4 py-3 text-muted">{l.cidade || '—'}</td>
                   <td className="px-4 py-3">
-                    <StatusBadge status={l.status} />
+                    <select
+                      value={l.status}
+                      onChange={(e) => mudarStatus(l.id, e.target.value)}
+                      disabled={acaoEmAndamento === l.id}
+                      className={`text-xs font-medium px-2 py-1 rounded border border-border bg-white cursor-pointer ${corStatusTexto(l.status)}`}
+                    >
+                      {STATUS_LISTA.map((s) => (
+                        <option key={s.value} value={s.value}>{s.label}</option>
+                      ))}
+                    </select>
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
                     <button
                       onClick={() => setSelecionado(l)}
-                      className="text-primary hover:underline text-sm"
+                      className="text-primary hover:underline text-sm mr-3"
                     >
                       Detalhes
+                    </button>
+                    <button
+                      onClick={() => excluir(l.id, l.nome)}
+                      disabled={acaoEmAndamento === l.id}
+                      className="text-danger hover:underline text-sm disabled:opacity-50"
+                      title="Excluir lead"
+                    >
+                      Excluir
                     </button>
                   </td>
                 </tr>
@@ -156,10 +223,26 @@ export default function LeadsTable({ leads }: { leads: Lead[] }) {
       )}
 
       {selecionado && (
-        <LeadDetalhe lead={selecionado} onFechar={() => setSelecionado(null)} />
+        <LeadDetalhe
+          lead={selecionado}
+          onFechar={() => setSelecionado(null)}
+          onMudarStatus={(novo) => mudarStatus(selecionado.id, novo)}
+          onExcluir={() => excluir(selecionado.id, selecionado.nome)}
+          ocupado={acaoEmAndamento === selecionado.id}
+        />
       )}
     </>
   );
+}
+
+function corStatusTexto(status: string) {
+  const map: Record<string, string> = {
+    novo: 'text-primary',
+    contatado: 'text-warning',
+    convertido: 'text-success',
+    descartado: 'text-muted'
+  };
+  return map[status] || 'text-ink';
 }
 
 function Badge({ children }: { children: React.ReactNode }) {
@@ -184,7 +267,19 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function LeadDetalhe({ lead, onFechar }: { lead: Lead; onFechar: () => void }) {
+function LeadDetalhe({
+  lead,
+  onFechar,
+  onMudarStatus,
+  onExcluir,
+  ocupado
+}: {
+  lead: Lead;
+  onFechar: () => void;
+  onMudarStatus: (s: string) => void;
+  onExcluir: () => void;
+  ocupado: boolean;
+}) {
   const exigidas = (lead.medidas || []).filter((m: any) => m.status === 'EXIGIDO');
   const condicionais = (lead.medidas || []).filter((m: any) => m.status === 'CONDICIONAL');
 
@@ -257,6 +352,25 @@ function LeadDetalhe({ lead, onFechar }: { lead: Lead; onFechar: () => void }) {
             )}
           </Bloco>
 
+          <Bloco titulo="Status do lead">
+            <div className="flex flex-wrap gap-2">
+              {STATUS_LISTA.map((s) => (
+                <button
+                  key={s.value}
+                  onClick={() => onMudarStatus(s.value)}
+                  disabled={ocupado || lead.status === s.value}
+                  className={`text-xs px-3 py-1.5 rounded border ${
+                    lead.status === s.value
+                      ? 'bg-primary text-white border-primary'
+                      : 'bg-white text-ink border-border hover:bg-bg disabled:opacity-50'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </Bloco>
+
           <div className="flex gap-3 pt-2 border-t border-border">
             <Link
               href={`/api/leads/${lead.id}/pdf`}
@@ -265,6 +379,13 @@ function LeadDetalhe({ lead, onFechar }: { lead: Lead; onFechar: () => void }) {
             >
               Ver PDF
             </Link>
+            <button
+              onClick={onExcluir}
+              disabled={ocupado}
+              className="text-danger text-sm hover:underline disabled:opacity-50"
+            >
+              Excluir lead
+            </button>
             <a
               href={`https://wa.me/55${((lead.telefone || lead.contato).match(/\d+/g) || []).join('').replace(/^55/, '')}`}
               target="_blank"

@@ -685,10 +685,29 @@ function renderSaidasPdf(d: any) {
             </View>
           ))}
 
+          {dim.verificacao_consolidada && (
+            <View style={{ marginTop: 8 }}>
+              <Text style={[styles.small, { fontWeight: 'bold', color: '#28251D' }]}>
+                Verificação consolidada do bloco de saída
+              </Text>
+              <Text style={styles.small}>
+                <Text style={[styles.badge, dim.verificacao_consolidada.atende ? styles.badgeOk : styles.badgeFail]}>
+                  {' '}{dim.verificacao_consolidada.atende ? 'ATENDE' : 'NÃO ATENDE'}{' '}
+                </Text>{' '}
+                Exigido: {dim.verificacao_consolidada.up_exigido} UP • Real (soma): {dim.verificacao_consolidada.up_real_total} UP
+              </Text>
+              <Text style={[styles.small, { paddingLeft: 10 }]}>
+                {dim.verificacao_consolidada.componentes
+                  .map((c) => `${c.label}: ${c.up} UP (${c.quantidade} un)`)
+                  .join(' • ')}
+              </Text>
+            </View>
+          )}
+
           {dim.verificacao.length > 0 && (
             <View style={{ marginTop: 8 }}>
               <Text style={[styles.small, { fontWeight: 'bold', color: '#28251D' }]}>
-                Verificação das saídas existentes
+                Verificação detalhada por tipo
               </Text>
               {dim.verificacao.map((v) => (
                 <View key={v.tipo} style={{ marginTop: 3 }}>

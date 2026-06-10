@@ -253,6 +253,15 @@ export type DimPavimento = {
   }>;
   dimensionamento: DimComponente[]; // só para componentes ativos
   verificacao: VerificacaoPavimento[]; // resultado por tipo (porta/escada/acesso)
+  verificacao_consolidada: VerificacaoConsolidada | null; // soma componentes do bloco (porta + escada etc)
+};
+
+export type VerificacaoConsolidada = {
+  up_exigido: number; // máximo entre os tipos ativos (componente mais restritivo)
+  tipo_mais_restritivo: ComponenteSaida; // qual tipo definiu o exigido
+  up_real_total: number; // soma de todas as UPs reais (porta + escada + acesso)
+  componentes: Array<{ tipo: ComponenteSaida; label: string; up: number; quantidade: number }>;
+  atende: boolean;
 };
 
 export type VerificacaoPavimento = {
@@ -374,13 +383,42 @@ export function dimensionarPavimento(p: Pavimento): DimPavimento {
     };
   });
 
+  // Verificação consolidada: soma todas as UPs reais do bloco (porta + escada + acesso)
+  // e compara com o componente mais restritivo. Permite que escadas/rampas/acessos
+  // ajudem a atender o exigido das portas (e vice-versa) quando estão no mesmo bloco de saída.
+  let verificacao_consolidada: VerificacaoConsolidada | null = null;
+  if (dimensionamento.length > 0) {
+    const componentes = dimensionamento.map((dim) => {
+      const reais = p.saidas_reais.filter((s) => s.tipo === dim.mode);
+      const up = reais.reduce((s, x) => {
+        const upPorEl = Math.floor((Number(x.largura_m) || 0) / UP_METROS);
+        return s + upPorEl * (Number(x.quantidade) || 0);
+      }, 0);
+      const qtd = reais.reduce((s, x) => s + (Number(x.quantidade) || 0), 0);
+      return { tipo: dim.mode, label: dim.label, up, quantidade: qtd };
+    });
+    const upTotalReal = componentes.reduce((s, c) => s + c.up, 0);
+    // Componente mais restritivo: aquele com maior UP exigido
+    const maisRestritivo = dimensionamento.reduce((acc, d) =>
+      d.total_up > acc.total_up ? d : acc
+    );
+    verificacao_consolidada = {
+      up_exigido: maisRestritivo.total_up,
+      tipo_mais_restritivo: maisRestritivo.mode,
+      up_real_total: upTotalReal,
+      componentes,
+      atende: upTotalReal >= maisRestritivo.total_up
+    };
+  }
+
   return {
     pavimento_id: p.id,
     label: p.label,
     populacao_total,
     por_ambiente,
     dimensionamento,
-    verificacao
+    verificacao,
+    verificacao_consolidada
   };
 }
 

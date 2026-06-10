@@ -911,8 +911,48 @@ function PavimentoCard({
             </div>
           )}
 
+          {dim.verificacao_consolidada && (
+            <div
+              className={
+                'mt-3 rounded-md border-2 px-3 py-2 ' +
+                (dim.verificacao_consolidada.atende
+                  ? 'border-success/60 bg-success/10'
+                  : 'border-error/60 bg-error/10')
+              }
+            >
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <span
+                  className={
+                    'text-[11px] font-bold px-2 py-0.5 rounded-full ' +
+                    (dim.verificacao_consolidada.atende
+                      ? 'bg-success text-white'
+                      : 'bg-error text-white')
+                  }
+                >
+                  {dim.verificacao_consolidada.atende ? 'ATENDE' : 'NÃO ATENDE'}
+                </span>
+                <span className="font-semibold">Bloco de saída (consolidado)</span>
+                <span className="text-muted">
+                  Exigido: {dim.verificacao_consolidada.up_exigido} UP
+                </span>
+                <span className="text-muted">→</span>
+                <span className="font-medium">
+                  Real (soma): {dim.verificacao_consolidada.up_real_total} UP
+                </span>
+              </div>
+              <div className="mt-1 text-xs text-muted">
+                {dim.verificacao_consolidada.componentes
+                  .map((c) => `${c.label}: ${c.up} UP (${c.quantidade} un)`)
+                  .join(' • ')}
+              </div>
+            </div>
+          )}
+
           {dim.verificacao.length > 0 && (
             <div className="mt-3 space-y-1">
+              <div className="text-[11px] uppercase tracking-wide text-muted">
+                Verificação detalhada por tipo
+              </div>
               {dim.verificacao.map((v) => (
                 <div
                   key={v.tipo}

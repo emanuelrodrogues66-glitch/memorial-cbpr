@@ -5,6 +5,8 @@ import {
   ImageRun
 } from 'docx';
 import { dimensionarTodos, DATA_SAIDAS, type Pavimento, type DimPavimento } from './saidas-npt011';
+import { calcularCaminhamento, textoCaminhamento } from './caminhamento-npt011';
+import { limparNomeAmbiente } from './nome-ambiente';
 import {
   MEDIDAS_QUADRO_PADRAO,
   medidaAtende,
@@ -395,8 +397,34 @@ function secInfoOperacional(d: any): any[] {
 // ============================================================================
 function renderSaidasDocx(d: any): any[] {
   const pavs: Pavimento[] = Array.isArray(d.saidas_pavimentos) ? d.saidas_pavimentos : [];
+
+  // Bloco de caminhamento (Anexo B NPT 011) no topo
+  const divisaoPrincipal = String(d.divisao || '').trim();
+  const medidasCSCIP: any[] = Array.isArray(d.medidas_cscip) ? d.medidas_cscip : [];
+  const temMedida = (chave: string) =>
+    medidasCSCIP.some((m) => m?.status === 'EXIGIDO' && String(m?.descricao || '').toLowerCase().includes(chave));
+  const blocoCaminhamento: any[] = [];
+  if (divisaoPrincipal) {
+    try {
+      const camin = calcularCaminhamento({
+        divisao_principal: divisaoPrincipal,
+        com_sprinkler: temMedida('chuveiro'),
+        com_deteccao_fumaca: temMedida('detec'),
+        leiaute_apresentado: Boolean(d.leiaute_apresentado),
+      });
+      blocoCaminhamento.push(
+        new Paragraph({
+          spacing: { before: 80, after: 40 },
+          children: [new TextRun({ text: `Caminhamento conforme ocupação principal (${divisaoPrincipal} — faixa ${camin.rotulo_faixa})`, bold: true, size: 18 })]
+        })
+      );
+      blocoCaminhamento.push(new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: textoCaminhamento(camin), size: 18 })] }));
+    } catch {}
+  }
+
   if (pavs.length === 0) {
     return [
+      ...blocoCaminhamento,
       tabela([
         row('População', d.populacao_calculada),
         row('Critério', d.populacao_descricao_npt011),
@@ -407,7 +435,7 @@ function renderSaidasDocx(d: any): any[] {
     ];
   }
   const dims: DimPavimento[] = dimensionarTodos(pavs);
-  const out: any[] = [];
+  const out: any[] = [...blocoCaminhamento];
 
   for (const dim of dims) {
     out.push(
@@ -430,7 +458,7 @@ function renderSaidasDocx(d: any): any[] {
     const dataRows = dim.por_ambiente.map((a) =>
       new TableRow({
         children: [
-          cellText(a.nome),
+          cellText(limparNomeAmbiente(a.nome)),
           cellText(a.divisao, { align: AlignmentType.CENTER }),
           cellText(a.net.toFixed(2), { align: AlignmentType.CENTER }),
           cellText(DATA_SAIDAS[a.divisao]?.pop ?? '—', { align: AlignmentType.CENTER }),
@@ -462,85 +490,136 @@ function renderSaidasDocx(d: any): any[] {
       })
     );
 
+    out.push(
+      new Paragraph({
+        spacing: { before: 160, after: 40 },
+        children: [new TextRun({ text: 'DIMENSIONAMENTO DAS UNIDADES DE PASSAGEM (item 5.4 NPT 011)', bold: true, size: 18, color: '01696F' })]
+      })
+    );
+    out.push(
+      new Paragraph({
+        spacing: { after: 80 },
+        children: [new TextRun({
+          text: 'Fórmula: N = P / C, onde N = unidades de passagem; P = população do pavimento; C = capacidade da unidade de passagem (Tabela 5 NPT 011). Resultado arredondado para o número inteiro imediatamente superior.',
+          italics: true, size: 16, color: '7A7974'
+        })]
+      })
+    );
     for (const comp of dim.dimensionamento) {
-      out.push(
-        new Paragraph({
-          spacing: { before: 160, after: 60 },
-          children: [new TextRun({ text: `${comp.label.toUpperCase()} — C=${comp.c_critico}`, bold: true, size: 18, color: '01696F' })]
-        })
-      );
-      const N = Math.max(1, Math.ceil(dim.populacao_total / Math.max(comp.c_critico, 1)));
+      const nCalc = dim.populacao_total / Math.max(comp.c_critico, 1);
+      const N = Math.max(1, Math.ceil(nCalc));
       const upFinal = comp.total_up;
       const larg = comp.total_largura_m.toFixed(2);
       out.push(
         new Paragraph({
-          spacing: { after: 40 },
-          children: [new TextRun({ text: `N = P/C = ${dim.populacao_total}/${comp.c_critico} = ${N} unidade(s) de passagem`, size: 18 })]
+          spacing: { before: 80, after: 30 },
+          children: [new TextRun({ text: `${comp.label.toUpperCase()} — C = ${comp.c_critico} pessoas/UP`, bold: true, size: 18 })]
         })
       );
+      out.push(new Paragraph({ spacing: { after: 20 }, children: [new TextRun({ text: '    N = P / C', size: 18 })] }));
+      out.push(new Paragraph({ spacing: { after: 20 }, children: [new TextRun({ text: `    N = ${dim.populacao_total} / ${comp.c_critico}`, size: 18 })] }));
+      out.push(new Paragraph({ spacing: { after: 20 }, children: [new TextRun({ text: `    N = ${nCalc.toFixed(2)} → ${N} UP (arredondado p/ cima)`, size: 18 })] }));
       out.push(
         new Paragraph({
           spacing: { after: 100 },
-          children: [new TextRun({ text: `Largura — ${comp.label.toLowerCase()}: ${upFinal} UP × 0,55 m = ${larg} m (mínimo ${comp.min_largura.toFixed(2)} m)`, bold: true, size: 18 })]
+          children: [new TextRun({ text: `    Total exigido: ${upFinal} UP × 0,55 m = ${larg} m (largura mínima absoluta: ${comp.min_largura.toFixed(2)} m)`, bold: true, size: 18 })]
         })
       );
     }
 
-    if (dim.verificacao.length > 0 && dim.verificacao.some((v) => v.quantidade_elementos > 0)) {
+    if (dim.verificacao.length > 0) {
       out.push(
         new Paragraph({
-          spacing: { before: 160, after: 60 },
-          children: [new TextRun({ text: 'VERIFICAÇÃO DAS SAÍDAS EXISTENTES', bold: true, size: 18, color: '01696F' })]
-        })
-      );
-      const verifHeader = new TableRow({
-        tableHeader: true,
-        children: [
-          cellText('Componente', { bold: true, bg: 'F2F2F2' }),
-          cellText('Exigido', { bold: true, bg: 'F2F2F2', align: AlignmentType.CENTER }),
-          cellText('Real', { bold: true, bg: 'F2F2F2', align: AlignmentType.CENTER }),
-          cellText('Resultado', { bold: true, bg: 'F2F2F2', align: AlignmentType.CENTER })
-        ]
-      });
-      const verifRows = dim.verificacao.map((v) =>
-        new TableRow({
-          children: [
-            cellText(v.label),
-            cellText(`${v.up_exigido} UP / ${v.largura_exigida_m.toFixed(2)} m`, { align: AlignmentType.CENTER }),
-            cellText(`${v.up_real} UP / ${v.largura_real_m.toFixed(2)} m (${v.quantidade_elementos} un)`, { align: AlignmentType.CENTER }),
-            cellText(v.atende ? 'ATENDE' : 'NÃO ATENDE', {
-              bold: true,
-              align: AlignmentType.CENTER,
-              color: 'FFFFFF',
-              bg: v.atende ? '437A22' : 'A12C7B'
-            })
-          ]
+          spacing: { before: 160, after: 40 },
+          children: [new TextRun({ text: 'CONFERÊNCIA DOS ELEMENTOS EXECUTADOS (item 5.4.1 NPT 011)', bold: true, size: 18, color: '01696F' })]
         })
       );
       out.push(
-        new Table({
-          width: { size: 100, type: WidthType.PERCENTAGE },
-          rows: [verifHeader, ...verifRows],
-          borders: {
-            top: { style: BorderStyle.SINGLE, size: 4, color: '000000' },
-            bottom: { style: BorderStyle.SINGLE, size: 4, color: '000000' },
-            left: { style: BorderStyle.SINGLE, size: 4, color: '000000' },
-            right: { style: BorderStyle.SINGLE, size: 4, color: '000000' },
-            insideHorizontal: { style: BorderStyle.SINGLE, size: 2, color: '808080' },
-            insideVertical: { style: BorderStyle.SINGLE, size: 2, color: '808080' }
-          }
+        new Paragraph({
+          spacing: { after: 80 },
+          children: [new TextRun({
+            text: 'Para cada componente real: UP = largura / 0,55 m, considerando apenas UPs inteiras (arredondamento para baixo). Quando há mais de um componente do mesmo tipo, as UPs são somadas.',
+            italics: true, size: 16, color: '7A7974'
+          })]
         })
       );
+      const pav = pavs.find((pp) => pp.id === dim.pavimento_id);
       for (const v of dim.verificacao) {
-        if (v.quantidade_elementos > 0) {
-          out.push(
-            new Paragraph({
-              spacing: { after: 40 },
-              children: [new TextRun({ text: `• ${v.label}: ${v.detalhes}`, size: 16, color: '7A7974' })]
-            })
-          );
+        out.push(
+          new Paragraph({
+            spacing: { before: 80, after: 20 },
+            children: [new TextRun({ text: v.label, bold: true, size: 18 })]
+          })
+        );
+        const reais = ((pav && pav.saidas_reais) || []).filter((s) => s.tipo === v.tipo);
+        if (reais.length === 0) {
+          out.push(new Paragraph({ spacing: { after: 20 }, children: [new TextRun({ text: '    Nenhum elemento informado.', size: 17, color: '7A7974', italics: true })] }));
+        } else {
+          reais.forEach((el, idx) => {
+            const larg = Number(el.largura_m) || 0;
+            const qtd = Number(el.quantidade) || 0;
+            const upEl = Math.floor(larg / 0.55);
+            const ident = el.identificacao || `${v.label} ${idx + 1}`;
+            out.push(new Paragraph({ spacing: { after: 10 }, children: [new TextRun({ text: `    ${ident} (${qtd} un):`, size: 17 })] }));
+            out.push(new Paragraph({ spacing: { after: 10 }, children: [new TextRun({ text: `        UP = ${larg.toFixed(2)} / 0,55 = ${(larg / 0.55).toFixed(2)} → ${upEl} UP cada`, size: 17 })] }));
+            if (qtd > 1) {
+              out.push(new Paragraph({ spacing: { after: 10 }, children: [new TextRun({ text: `        Soma do tipo: ${upEl} × ${qtd} = ${upEl * qtd} UP`, size: 17 })] }));
+            }
+          });
         }
+        out.push(
+          new Paragraph({
+            spacing: { after: 60 },
+            children: [
+              new TextRun({
+                text: `    ${v.atende ? 'ATENDE' : 'NÃO ATENDE'} — Total real: ${v.up_real} UP • Exigido: ${v.up_exigido} UP`,
+                bold: true,
+                size: 17,
+                color: v.atende ? '437A22' : 'A12C7B'
+              })
+            ]
+          })
+        );
       }
+    }
+
+    // Consolidado do bloco (porta + escada + rampa + acesso)
+    if (dim.verificacao_consolidada && dim.verificacao.length > 1) {
+      const vc = dim.verificacao_consolidada;
+      out.push(
+        new Paragraph({
+          spacing: { before: 160, after: 40 },
+          children: [new TextRun({ text: 'VERIFICAÇÃO CONSOLIDADA DO BLOCO DE SAÍDA', bold: true, size: 18, color: '01696F' })]
+        })
+      );
+      out.push(
+        new Paragraph({
+          spacing: { after: 60 },
+          children: [new TextRun({
+            text: 'Quando o mesmo bloco de saída combina porta + escada + rampa + acesso, as unidades de passagem dos componentes são somadas e comparadas com o componente mais restritivo.',
+            italics: true, size: 16, color: '7A7974'
+          })]
+        })
+      );
+      for (const c of vc.componentes) {
+        out.push(new Paragraph({ spacing: { after: 10 }, children: [new TextRun({ text: `    ${c.label}: ${c.up} UP (${c.quantidade} un)`, size: 17 })] }));
+      }
+      out.push(
+        new Paragraph({
+          spacing: { after: 10 },
+          children: [new TextRun({ text: `    Total real consolidado: ${vc.componentes.map((c) => c.up).join(' + ')} = ${vc.up_real_total} UP`, size: 17 })]
+        })
+      );
+      out.push(
+        new Paragraph({
+          spacing: { after: 60 },
+          children: [new TextRun({
+            text: `    ${vc.atende ? 'ATENDE' : 'NÃO ATENDE'} — Consolidado ${vc.up_real_total} UP ≥ Exigido (mais restritivo) ${vc.up_exigido} UP`,
+            bold: true, size: 17,
+            color: vc.atende ? '437A22' : 'A12C7B'
+          })]
+        })
+      );
     }
   }
 
@@ -833,7 +912,7 @@ export async function gerarDocxBlob(d: any, secoes?: SecaoMemorial[]): Promise<B
   if (incluiSecao(secoes, 'saidas')) {
     blocos.push({
       key: 'saidas',
-      els: [h1('Memorial de saídas de emergência (NPT 011)'), ...renderSaidasDocx(d)]
+      els: [h1('Memorial de saídas de emergência (NPT 011)'), ...renderSaidasDocx(d), ...assinatura(d)]
     });
   }
   if (incluiSecao(secoes, 'carga_incendio')) blocos.push({ key: 'carga_incendio', els: secCargaIncendio(d) });

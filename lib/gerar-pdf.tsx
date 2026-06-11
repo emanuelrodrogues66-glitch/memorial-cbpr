@@ -647,7 +647,9 @@ function renderSaidasPdf(d: any) {
   return (
     <>
       {blocoCaminhamento}
-      {dims.map((dim) => (
+      {dims.map((dim) => {
+        const p = pavs.find((pp) => pp.id === dim.pavimento_id);
+        return (
         <View key={dim.pavimento_id} wrap={false} style={{ marginBottom: 10 }}>
           <Text style={styles.h3}>{dim.label}</Text>
 
@@ -675,59 +677,127 @@ function renderSaidasPdf(d: any) {
             <Text style={styles.cellR}>{dim.populacao_total} pess.</Text>
           </View>
 
-          {dim.dimensionamento.map((comp) => (
-            <View key={comp.mode} style={{ marginTop: 6 }}>
-              <Text style={[styles.small, { fontWeight: 'bold', color: '#28251D' }]}>
-                {comp.label} — C={comp.c_critico} • N=P/C={Math.ceil(dim.populacao_total / Math.max(comp.c_critico, 1))} UP
-              </Text>
-              <Text style={styles.small}>
-                Total: {comp.total_up} UP × 0,55 m = {comp.total_largura_m.toFixed(2)} m (mínimo {comp.min_largura.toFixed(2)} m)
-              </Text>
-            </View>
-          ))}
+          {/* MEMORIAL DE CÁLCULO: dimensionamento das UPs exigidas (N = P/C) */}
+          <View style={{ marginTop: 8 }}>
+            <Text style={[styles.small, { fontWeight: 'bold', color: '#28251D' }]}>
+              Dimensionamento das unidades de passagem (item 5.4 NPT 011)
+            </Text>
+            <Text style={[styles.small, { fontStyle: 'italic', marginBottom: 3 }]}>
+              Fórmula: N = P / C, onde N = unidades de passagem; P = população do pavimento;
+              C = capacidade da unidade de passagem (Tabela 5 NPT 011). Resultado arredondado
+              para o número inteiro imediatamente superior.
+            </Text>
+            {dim.dimensionamento.map((comp) => {
+              const nCalc = dim.populacao_total / Math.max(comp.c_critico, 1);
+              const nUp = Math.ceil(nCalc);
+              return (
+                <View key={comp.mode} style={{ marginTop: 4 }}>
+                  <Text style={[styles.small, { fontWeight: 'bold' }]}>
+                    {comp.label} — C = {comp.c_critico} pessoas/UP
+                  </Text>
+                  <Text style={[styles.small, { paddingLeft: 10 }]}>
+                    N = P / C
+                  </Text>
+                  <Text style={[styles.small, { paddingLeft: 10 }]}>
+                    N = {dim.populacao_total} / {comp.c_critico}
+                  </Text>
+                  <Text style={[styles.small, { paddingLeft: 10 }]}>
+                    N = {nCalc.toFixed(2)} → {nUp} UP (arredondado p/ cima)
+                  </Text>
+                  <Text style={[styles.small, { paddingLeft: 10 }]}>
+                    Total exigido: {comp.total_up} UP × 0,55 m = {comp.total_largura_m.toFixed(2)} m
+                    {' '}(largura mínima absoluta: {comp.min_largura.toFixed(2)} m)
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
 
-          {dim.verificacao_consolidada && (
+          {/* CONFERÊNCIA: para cada elemento real, UP = largura / 0,55 */}
+          {dim.verificacao.length > 0 && (
+            <View style={{ marginTop: 8 }}>
+              <Text style={[styles.small, { fontWeight: 'bold', color: '#28251D' }]}>
+                Conferência dos elementos executados (item 5.4.1 NPT 011)
+              </Text>
+              <Text style={[styles.small, { fontStyle: 'italic', marginBottom: 3 }]}>
+                Para cada componente real: UP = largura / 0,55 m, considerando apenas UPs inteiras
+                (arredondamento para baixo). Quando há mais de um componente do mesmo tipo, as UPs
+                são somadas.
+              </Text>
+              {dim.verificacao.map((v) => {
+                const reais = ((p && p.saidas_reais) || []).filter((s: any) => s.tipo === v.tipo);
+                return (
+                  <View key={v.tipo} style={{ marginTop: 4 }}>
+                    <Text style={[styles.small, { fontWeight: 'bold' }]}>{v.label}</Text>
+                    {reais.length === 0 ? (
+                      <Text style={[styles.small, { paddingLeft: 10, color: '#7B7666' }]}>
+                        Nenhum elemento informado.
+                      </Text>
+                    ) : (
+                      reais.map((el: any, idx: number) => {
+                        const larg = Number(el.largura_m) || 0;
+                        const qtd = Number(el.quantidade) || 0;
+                        const upEl = Math.floor(larg / 0.55);
+                        const ident = el.identificacao || `${v.label} ${idx + 1}`;
+                        return (
+                          <View key={idx} style={{ paddingLeft: 10 }}>
+                            <Text style={styles.small}>{ident} ({qtd} un):</Text>
+                            <Text style={[styles.small, { paddingLeft: 10 }]}>
+                              UP = {larg.toFixed(2)} / 0,55 = {(larg / 0.55).toFixed(2)} → {upEl} UP cada
+                            </Text>
+                            {qtd > 1 && (
+                              <Text style={[styles.small, { paddingLeft: 10 }]}>
+                                Soma do tipo: {upEl} × {qtd} = {upEl * qtd} UP
+                              </Text>
+                            )}
+                          </View>
+                        );
+                      })
+                    )}
+                    <Text style={[styles.small, { paddingLeft: 10, marginTop: 2 }]}>
+                      <Text style={[styles.badge, v.atende ? styles.badgeOk : styles.badgeFail]}>
+                        {' '}{v.atende ? 'ATENDE' : 'NÃO ATENDE'}{' '}
+                      </Text>{' '}
+                      Total real: {v.up_real} UP • Exigido: {v.up_exigido} UP
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+
+          {/* CONSOLIDADO: soma porta + escada + rampa + acesso do mesmo bloco */}
+          {dim.verificacao_consolidada && dim.verificacao.length > 1 && (
             <View style={{ marginTop: 8 }}>
               <Text style={[styles.small, { fontWeight: 'bold', color: '#28251D' }]}>
                 Verificação consolidada do bloco de saída
               </Text>
-              <Text style={styles.small}>
+              <Text style={[styles.small, { fontStyle: 'italic', marginBottom: 3 }]}>
+                Quando o mesmo bloco de saída combina porta + escada + rampa + acesso, as unidades
+                de passagem dos componentes são somadas e comparadas com o componente mais
+                restritivo.
+              </Text>
+              {dim.verificacao_consolidada.componentes.map((c, i) => (
+                <Text key={i} style={[styles.small, { paddingLeft: 10 }]}>
+                  {c.label}: {c.up} UP ({c.quantidade} un)
+                </Text>
+              ))}
+              <Text style={[styles.small, { paddingLeft: 10, marginTop: 2 }]}>
+                Total real consolidado: {dim.verificacao_consolidada.componentes
+                  .map((c) => c.up)
+                  .join(' + ')}{' = '}{dim.verificacao_consolidada.up_real_total} UP
+              </Text>
+              <Text style={[styles.small, { paddingLeft: 10 }]}>
                 <Text style={[styles.badge, dim.verificacao_consolidada.atende ? styles.badgeOk : styles.badgeFail]}>
                   {' '}{dim.verificacao_consolidada.atende ? 'ATENDE' : 'NÃO ATENDE'}{' '}
                 </Text>{' '}
-                Exigido: {dim.verificacao_consolidada.up_exigido} UP • Real (soma): {dim.verificacao_consolidada.up_real_total} UP
+                Consolidado: {dim.verificacao_consolidada.up_real_total} UP ≥ Exigido (mais restritivo): {dim.verificacao_consolidada.up_exigido} UP
               </Text>
-              <Text style={[styles.small, { paddingLeft: 10 }]}>
-                {dim.verificacao_consolidada.componentes
-                  .map((c) => `${c.label}: ${c.up} UP (${c.quantidade} un)`)
-                  .join(' • ')}
-              </Text>
-            </View>
-          )}
-
-          {dim.verificacao.length > 0 && (
-            <View style={{ marginTop: 8 }}>
-              <Text style={[styles.small, { fontWeight: 'bold', color: '#28251D' }]}>
-                Verificação detalhada por tipo
-              </Text>
-              {dim.verificacao.map((v) => (
-                <View key={v.tipo} style={{ marginTop: 3 }}>
-                  <Text style={styles.small}>
-                    <Text style={[styles.badge, v.atende ? styles.badgeOk : styles.badgeFail]}>
-                      {' '}{v.atende ? 'ATENDE' : 'NÃO ATENDE'}{' '}
-                    </Text>{' '}
-                    {v.label} — Exigido: {v.up_exigido} UP / {v.largura_exigida_m.toFixed(2)} m •
-                    Real: {v.up_real} UP / {v.largura_real_m.toFixed(2)} m ({v.quantidade_elementos} un)
-                  </Text>
-                  {v.detalhes && v.detalhes !== 'Nenhum elemento informado' && (
-                    <Text style={[styles.small, { paddingLeft: 10 }]}>{v.detalhes}</Text>
-                  )}
-                </View>
-              ))}
             </View>
           )}
         </View>
-      ))}
+        );
+      })}
       {dims.length > 1 && (
         <View style={{ marginTop: 6 }}>
           <Text style={[styles.small, { fontWeight: 'bold' }]}>

@@ -5,6 +5,12 @@ import { buscarCnae, getCnae, listarCnaes } from '@/lib/calculos';
 import { formatarCnpj, formatarTelefone } from '@/lib/leads';
 import type { MedidaCSCIP } from '@/lib/cscip-medidas';
 import { rotuloModalidade, type ClassificacaoResultado } from '@/lib/classificar-npt001';
+import {
+  rotuloRiscoSC,
+  rotuloProcessoSC,
+  corRiscoSC,
+  type ClassificacaoSCResultado
+} from '@/lib/classificar-in01-sc';
 import type { CnaeRow } from '@/lib/types';
 import { siglaProjeto, rotuloCBM, type UF } from '@/lib/cbmsc';
 
@@ -15,6 +21,7 @@ type Resultado = {
   medidas: MedidaCSCIP[];
   simplificada: boolean;
   classificacao: ClassificacaoResultado;
+  classificacao_sc?: ClassificacaoSCResultado;
 };
 
 export default function ConsultaForm() {
@@ -182,7 +189,8 @@ export default function ConsultaForm() {
         id: json.id,
         medidas: json.medidas,
         simplificada: json.simplificada,
-        classificacao: json.classificacao
+        classificacao: json.classificacao,
+        classificacao_sc: json.classificacao_sc
       });
       setEtapa('resultado');
     } catch (e: any) {
@@ -565,7 +573,7 @@ function ResultadoView({
   dadosEnviados: any;
   onNovaConsulta: () => void;
 }) {
-  const { classificacao } = resultado;
+  const { classificacao, classificacao_sc } = resultado;
   const uf: UF = (dadosEnviados.uf || 'PR') as UF;
   const exigidas = resultado.medidas.filter((m) => m.status === 'EXIGIDO');
   const condicionais = resultado.medidas.filter((m) => m.status === 'CONDICIONAL');
@@ -578,6 +586,24 @@ function ResultadoView({
     PTPID_IOT: 'bg-warning/10 text-warning border-warning/30',
     ANALISE_NPT002: 'bg-warning/10 text-warning border-warning/30'
   };
+
+  // SC: mapa de cor por nivel de risco
+  const corRiscoMap: Record<string, string> = {
+    success: 'bg-success/10 text-success border-success/30',
+    primary: 'bg-primary/10 text-primary border-primary/30',
+    warning: 'bg-warning/10 text-warning border-warning/30',
+    danger: 'bg-danger/10 text-danger border-danger/30'
+  };
+
+  // Em SC usamos o card de Risco I-V; em PR mantemos o card de Modalidade
+  const usaSC = uf === 'SC' && !!classificacao_sc;
+  const tituloCard = usaSC ? 'Classificação do risco' : 'Modalidade exigida';
+  const valorCard = usaSC
+    ? rotuloRiscoSC(classificacao_sc!.risco)
+    : rotuloModalidade(classificacao.modalidade, uf);
+  const corCard = usaSC
+    ? corRiscoMap[corRiscoSC(classificacao_sc!.risco)]
+    : corClass[classificacao.modalidade];
 
   function baixarPdf() {
     window.open(`/api/leads/${resultado.id}/pdf`, '_blank');
@@ -592,13 +618,19 @@ function ResultadoView({
         </p>
       </div>
 
-      {/* Modalidade exigida */}
-      <div className={`border rounded-lg p-5 ${corClass[classificacao.modalidade]}`}>
-        <div className="text-xs uppercase tracking-wider font-semibold opacity-70">Modalidade exigida</div>
-        <div className="text-2xl font-bold mt-1">{rotuloModalidade(classificacao.modalidade, uf)}</div>
+      {/* Card principal: Modalidade (PR) ou Risco I-V (SC) */}
+      <div className={`border rounded-lg p-5 ${corCard}`}>
+        <div className="text-xs uppercase tracking-wider font-semibold opacity-70">{tituloCard}</div>
+        <div className="text-2xl font-bold mt-1">{valorCard}</div>
         <div className="text-xs mt-1 opacity-70">
-          Tipo da edificação: <strong>{rotuloTipo(classificacao.tipo_edificacao)}</strong>
-          {resultado.simplificada && <span className="ml-2">· edificação simplificada (Tabela 5)</span>}
+          {usaSC ? (
+            <>Processo: <strong>{rotuloProcessoSC(classificacao_sc!.tipo_processo)}</strong></>
+          ) : (
+            <>
+              Tipo da edificação: <strong>{rotuloTipo(classificacao.tipo_edificacao)}</strong>
+              {resultado.simplificada && <span className="ml-2">· edificação simplificada (Tabela 5)</span>}
+            </>
+          )}
         </div>
 
         {classificacao.justificativas.length > 0 && (
@@ -663,7 +695,7 @@ function ResultadoView({
         </div>
 
         <div className="bg-primary/5 border border-primary/30 rounded-lg p-5 text-center">
-          <h3 className="font-semibold text-ink">Precisa do {rotuloModalidade(classificacao.modalidade, uf)}?</h3>
+          <h3 className="font-semibold text-ink">Precisa do {usaSC ? rotuloRiscoSC(classificacao_sc!.risco) : rotuloModalidade(classificacao.modalidade, uf)}?</h3>
           <p className="text-sm text-muted mt-1 mb-3">
             {uf === 'SC'
               ? 'Elaboramos toda a documentação conforme as Instruções Normativas (IN) do CBMSC, pronta para protocolar.'
@@ -671,7 +703,7 @@ function ResultadoView({
           </p>
           <a
             href={`https://wa.me/${(process.env.NEXT_PUBLIC_WHATSAPP_PUBLICO || '5543998439725').replace(/\D/g, '')}?text=${encodeURIComponent(
-              `Olá, fiz a consulta no site. Minha edificação ${dadosEnviados.divisao} (${dadosEnviados.area} m², ${dadosEnviados.altura} m) em ${uf} precisa de ${rotuloModalidade(classificacao.modalidade, uf)}. Gostaria de uma consultoria técnica sem custo.`
+              `Olá, fiz a consulta no site. Minha edificação ${dadosEnviados.divisao} (${dadosEnviados.area} m², ${dadosEnviados.altura} m) em ${uf} precisa de ${usaSC ? rotuloRiscoSC(classificacao_sc!.risco) : rotuloModalidade(classificacao.modalidade, uf)}. Gostaria de uma consultoria técnica sem custo.`
             )}`}
             target="_blank"
             rel="noopener noreferrer"

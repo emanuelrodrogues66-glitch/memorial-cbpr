@@ -29,7 +29,18 @@ const LeadSchema = z.object({
   liquido_inflamavel_litros: z.number().nonnegative().optional().nullable(),
   glp_kg: z.number().nonnegative().optional().nullable(),
   tem_hidrantes_instalados: z.boolean().optional().default(false),
-  populacao: z.number().int().nonnegative().optional().nullable()
+  populacao: z.number().int().nonnegative().optional().nullable(),
+  // Adicionais SC (IN 01 PT 01)
+  pavimentos: z.number().int().nonnegative().optional().nullable(),
+  liquido_inflamavel_externo_m3: z.number().nonnegative().optional().nullable(),
+  carga_incendio_mj_m2: z.number().nonnegative().optional().nullable(),
+  tem_substancia_radioativa: z.boolean().optional().default(false),
+  tem_explosivos: z.boolean().optional().default(false),
+  tem_pirotecnico: z.boolean().optional().default(false),
+  tem_municao: z.boolean().optional().default(false),
+  residencia_unifamiliar: z.boolean().optional().default(false),
+  empregados: z.number().int().nonnegative().optional().nullable(),
+  unidades_condominio_horizontal: z.number().int().nonnegative().optional().nullable()
 });
 
 export async function POST(req: NextRequest) {
@@ -49,10 +60,11 @@ export async function POST(req: NextRequest) {
   }
   const lead = parsed.data;
 
-  // Calcula exigencias + classificacao NPT 001
-  const { medidas, simplificada, classificacao } = calcularExigencias({
+  // Calcula exigencias + classificacao (PR=NPT 001 / SC=IN 01)
+  const { medidas, simplificada, classificacao, classificacao_sc } = calcularExigencias({
     nome: lead.nome,
     telefone: lead.telefone,
+    uf: lead.uf,
     divisao: lead.divisao,
     area_m2: lead.area_m2,
     altura_m: lead.altura_m,
@@ -62,7 +74,18 @@ export async function POST(req: NextRequest) {
     tem_subsolo_computado: lead.tem_subsolo_computado,
     liquido_inflamavel_litros: lead.liquido_inflamavel_litros,
     glp_kg: lead.glp_kg,
-    tem_hidrantes_instalados: lead.tem_hidrantes_instalados
+    tem_hidrantes_instalados: lead.tem_hidrantes_instalados,
+    // Campos SC
+    pavimentos: lead.pavimentos,
+    liquido_inflamavel_externo_m3: lead.liquido_inflamavel_externo_m3,
+    carga_incendio_mj_m2: lead.carga_incendio_mj_m2,
+    tem_substancia_radioativa: lead.tem_substancia_radioativa,
+    tem_explosivos: lead.tem_explosivos,
+    tem_pirotecnico: lead.tem_pirotecnico,
+    tem_municao: lead.tem_municao,
+    residencia_unifamiliar: lead.residencia_unifamiliar,
+    empregados: lead.empregados,
+    unidades_condominio_horizontal: lead.unidades_condominio_horizontal
   });
 
   // Concatena telefone e email no campo contato (compat) e salva separados tambem
@@ -120,7 +143,8 @@ export async function POST(req: NextRequest) {
     created_at: data.created_at,
     medidas,
     simplificada,
-    classificacao
+    classificacao,
+    classificacao_sc
   });
 }
 

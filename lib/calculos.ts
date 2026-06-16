@@ -17,6 +17,7 @@ import { calcularBrigadaSC } from './cbmsc/brigada-in28';
 import { dimensionarIluminacaoSC } from './cbmsc/iluminacao-in11';
 import { classificarCargaSC, descreverClasseCargaSC } from './cbmsc/carga-in03';
 import type { UF } from './cbmsc';
+import { nptOuIn } from './cbmsc';
 import {
   calcularMediaPonderada,
   type ItemCargaIncendio,
@@ -170,10 +171,10 @@ export function calcularBrigada(populacao: number, grupo: string | undefined, or
     partes.push(`Grupo F (locais de reunião de público): acréscimo de 30% → ${pop} × 1,30 = ${popAjustada} pessoa(s).`);
   }
   partes.push(
-    `Cálculo NPT 017 item 6.2: ${popAjustada} ÷ 200 = ${razao.toFixed(2)} → ${brigadistas} brigadista(s) ` +
+    `Cálculo NPT 017 item 6.2 (PR): ${popAjustada} ÷ 200 = ${razao.toFixed(2)} → ${brigadistas} brigadista(s) ` +
     `(arredondamento para o número inteiro imediatamente superior).`
   );
-  partes.push('Critério: 1 brigadista orgânico para cada 200 (duzentas) pessoas (Tabela 1 da NPT 011).');
+  partes.push('Critério (PR): 1 brigadista orgânico para cada 200 (duzentas) pessoas (Tabela 1 da NPT 011).');
   return {
     brigadistas,
     populacao_ajustada: popAjustada,
@@ -181,29 +182,33 @@ export function calcularBrigada(populacao: number, grupo: string | undefined, or
   };
 }
 
-// Sugere medidas de proteção mínimas com base em altura, área e risco
+// Sugere medidas de proteção mínimas com base em altura, área e risco.
+// Cita a NPT (PR) ou a IN equivalente (SC) conforme a UF do projeto.
 export function sugerirMedidas(
   alturaM: number,
   area: number,
-  risco: RiscoIncendio
+  risco: RiscoIncendio,
+  uf?: string
 ): string[] {
+  const u: UF = (uf || '').toUpperCase() === 'SC' ? 'SC' : 'PR';
+  const ref = (npt: string) => nptOuIn(u, npt);
   const m: string[] = [];
   m.push('Sinalização de emergência');
   m.push('Iluminação de emergência');
-  m.push('Saídas de emergência dimensionadas conforme NPT 011');
-  m.push('Extintores portáteis conforme NPT 021');
-  m.push('Brigada de incêndio conforme NPT 017');
+  m.push(`Saídas de emergência dimensionadas conforme ${ref('011')}`);
+  m.push(`Extintores portáteis conforme ${ref('021')}`);
+  m.push(`Brigada de incêndio conforme ${ref('017')}`);
   if (alturaM > 12 || area > 750) {
-    m.push('Sistema de hidrantes e mangotinhos (NPT 022)');
+    m.push(`Sistema de hidrantes e mangotinhos (${ref('022')})`);
   }
   if (alturaM > 23 || area > 1500 || risco === 'ALTO') {
-    m.push('Sistema de chuveiros automáticos – sprinklers (NPT 023)');
+    m.push(`Sistema de chuveiros automáticos – sprinklers (${ref('023')})`);
   }
   if (alturaM > 23) {
-    m.push('Sistema de detecção e alarme de incêndio (NPT 019)');
+    m.push(`Sistema de detecção e alarme de incêndio (${ref('019')})`);
   }
   if (risco === 'ALTO') {
-    m.push('Controle de materiais de acabamento e revestimento (NPT 010)');
+    m.push(`Controle de materiais de acabamento e revestimento (${ref('010')})`);
   }
   return m;
 }
@@ -304,7 +309,8 @@ export function calcular(dados: any) {
   const medidas = sugerirMedidas(
     Number(dados.altura_edificacao_m) || 0,
     Number(dados.area_construida_m2) || 0,
-    risco
+    risco,
+    uf
   );
 
   // Verificador CSCIP/PR: matriz Grupo+Divisão+Altura+Área → medidas

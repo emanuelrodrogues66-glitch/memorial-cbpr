@@ -7,6 +7,7 @@ import { dimensionarTodos, DATA_SAIDAS, type Pavimento, type DimPavimento } from
 import { calcularCaminhamento, textoCaminhamento } from './caminhamento-npt011';
 import {
   MEDIDAS_QUADRO_PADRAO,
+  medidasQuadroParaUF,
   medidaAtende,
   palavraChaveQuadro,
   textoEstruturas,
@@ -29,6 +30,9 @@ import {
   rotuloCBM,
   rotuloConjuntoNormativo,
   siglaCBM,
+  norma,
+  nptOuIn,
+  itemNorma,
   type UF
 } from './cbmsc';
 
@@ -214,8 +218,8 @@ function PageClassificacao({ d }: { d: any }) {
         <Linha k="Área construída" v={d.area_construida_m2 ? `${d.area_construida_m2} m²` : '—'} />
         <Linha k="Altura da edificação" v={d.altura_edificacao_m ? `${d.altura_edificacao_m} m` : '—'} />
         <Linha k="Pavimentos" v={d.numero_pavimentos} />
-        <Linha k="Tipo (NPT 005)" v={d.tipo_edificacao} />
-        <Linha k="Classe (NPT 008)" v={d.classe_npt008} />
+        <Linha k={`Tipo (${nptOuIn((d.uf || 'PR') as UF, '005')})`} v={d.tipo_edificacao} />
+        <Linha k={`Classe (${nptOuIn((d.uf || 'PR') as UF, '008')})`} v={d.classe_npt008} />
         <Linha k="TRRF" v={d.trrf_minutos != null ? `${d.trrf_minutos} min` : 'sem regra'} />
 
         <Text style={styles.h2}>4. Quadro resumo das medidas de segurança</Text>
@@ -239,7 +243,7 @@ function PageClassificacao({ d }: { d: any }) {
             if (medidaAtende(d, nome)) return 'EXIGIDO';
             return null;
           };
-          const linhas = MEDIDAS_QUADRO_PADRAO
+          const linhas = medidasQuadroParaUF((d.uf || 'PR') as UF)
             .map((m) => ({ ...m, st: status(m.nome) }))
             .filter((m) => m.st !== null);
           if (linhas.length === 0) {
@@ -380,10 +384,10 @@ function PageBrigada({ d }: { d: any }) {
   const brig = Number(d.brigadistas_necessarios) || 0;
   return (
       <Page size="A4" style={styles.page}>
-        <Text style={styles.h1}>Memorial de cálculo da brigada de incêndio (NPT 017)</Text>
+        <Text style={styles.h1}>Memorial de cálculo da brigada de incêndio ({rotuloNormaBrigada('PR')})</Text>
         <Text style={[styles.pJustify, { marginTop: 8 }]}>
-          Item 6.2 da NPT 017: a composição da brigada de incêndio será determinada pela
-          população potencialmente exposta, conforme Tabela 1 da NPT 011, na proporção de
+          Item 6.2 da {rotuloNormaBrigada('PR')}: a composição da brigada de incêndio será determinada pela
+          população potencialmente exposta, conforme Tabela 1 da {rotuloNormaSaidas('PR')}, na proporção de
           1 brigadista orgânico para cada 200 (duzentas) pessoas, considerando-se o número
           inteiro imediatamente superior.
         </Text>
@@ -407,7 +411,7 @@ function PageBrigada({ d }: { d: any }) {
             : `${popAjustada} ÷ 200 = ${(popAjustada / 200).toFixed(2)} → ${brig} brigadista(s).`}
         </Text>
         <Linha k="Resultado" v={`${brig} brigadista(s) treinado(s)`} />
-        <Linha k="Critério NPT 017" v="1 brigadista a cada 200 pessoas (arredondamento para cima)" />
+        <Linha k={`Critério ${rotuloNormaBrigada('PR')}`} v="1 brigadista a cada 200 pessoas (arredondamento para cima)" />
         <Text style={[styles.small, { marginTop: 8 }]}>
           Nota: com base no cálculo foi considerado 1 brigadista a cada 200 pessoas.
         </Text>
@@ -442,7 +446,7 @@ function PageAcessoViaturas({ d }: { d: any }) {
         <View style={styles.figuraBox} wrap={false}>
           <Text style={styles.figuraTitulo}>Figura 1 — Largura de via de acesso.</Text>
           <Image style={styles.figuraImg} src={imgUrl('/imagens-npt006/01-largura-via.jpg')} />
-          <Text style={styles.figuraFonte}>FONTE: NPT 006 — Acesso de viatura na edificação e áreas de risco.</Text>
+          <Text style={styles.figuraFonte}>FONTE: {norma((d.uf || 'PR') as UF, '006')} — Acesso de viatura na edificação e áreas de risco.</Text>
         </View>
       </Page>
 
@@ -451,19 +455,18 @@ function PageAcessoViaturas({ d }: { d: any }) {
         <View style={styles.figuraBox} wrap={false}>
           <Text style={styles.figuraTitulo}>Figura 2 — Largura e altura mínima do portão de acesso.</Text>
           <Image style={styles.figuraImg} src={imgUrl('/imagens-npt006/02-portao-acesso.jpg')} />
-          <Text style={styles.figuraFonte}>FONTE: NPT 006 — Acesso de viatura na edificação e áreas de risco.</Text>
+          <Text style={styles.figuraFonte}>FONTE: {norma((d.uf || 'PR') as UF, '006')} — Acesso de viatura na edificação e áreas de risco.</Text>
         </View>
 
         <View style={styles.figuraBox} wrap={false}>
           <Text style={styles.figuraTitulo}>Figura 3 — Disposição das vias de acesso e retorno de viaturas.</Text>
           <Image style={styles.figuraImg} src={imgUrl('/imagens-npt006/03-retorno-edificio.jpg')} />
-          <Text style={styles.figuraFonte}>FONTE: NPT 006 — Acesso de viatura na edificação e áreas de risco.</Text>
+          <Text style={styles.figuraFonte}>FONTE: {norma((d.uf || 'PR') as UF, '006')} — Acesso de viatura na edificação e áreas de risco.</Text>
         </View>
 
         <Text style={[styles.pJustify, { marginTop: 8 }]}>
           Recomenda-se que as vias de acesso com extensão superior a 45,00 m possuam retornos em
-          formato circular, em "Y" ou em "T", conforme modelos de retornos constantes na NPT 005
-          — Segurança contra incêndio urbanística.
+          formato circular, em "Y" ou em "T", conforme modelos de retornos constantes na {norma((d.uf || 'PR') as UF, '005')}.
         </Text>
 
         <Assinatura d={d} />
@@ -646,9 +649,11 @@ function renderCargaIncendio(d: any) {
 }
 
 // ============================================================================
-// Render: saídas (NPT 011)
+// Render: saídas (NPT 011 / IN 09)
 // ============================================================================
 function renderSaidasPdf(d: any) {
+  const ufSai = (d.uf || 'PR') as UF;
+  const labelSai = nptOuIn(ufSai, '011');
   const pavs: Pavimento[] = Array.isArray(d.saidas_pavimentos) ? d.saidas_pavimentos : [];
 
   // Bloco de caminhamento (Tabela 2 NPT 011) — sempre no início do memorial
@@ -732,11 +737,11 @@ function renderSaidasPdf(d: any) {
           {/* MEMORIAL DE CÁLCULO: dimensionamento das UPs exigidas (N = P/C) */}
           <View style={{ marginTop: 8 }}>
             <Text style={[styles.small, { fontWeight: 'bold', color: '#28251D' }]}>
-              Dimensionamento das unidades de passagem (item 5.4 NPT 011)
+              Dimensionamento das unidades de passagem ({itemNorma(ufSai, '011', '5.4')})
             </Text>
             <Text style={[styles.small, { fontStyle: 'italic', marginBottom: 3 }]}>
               Fórmula: N = P / C, onde N = unidades de passagem; P = população do pavimento;
-              C = capacidade da unidade de passagem (Tabela 5 NPT 011). Resultado arredondado
+              C = capacidade da unidade de passagem ({ufSai === 'SC' ? `Tabela 7 da ${labelSai}` : `Tabela 5 da ${labelSai}`}). Resultado arredondado
               para o número inteiro imediatamente superior.
             </Text>
             {dim.dimensionamento.map((comp) => {
@@ -769,7 +774,7 @@ function renderSaidasPdf(d: any) {
           {dim.verificacao.length > 0 && (
             <View style={{ marginTop: 8 }}>
               <Text style={[styles.small, { fontWeight: 'bold', color: '#28251D' }]}>
-                Conferência dos elementos executados (item 5.4.1 NPT 011)
+                Conferência dos elementos executados ({itemNorma(ufSai, '011', '5.4.1')})
               </Text>
               <Text style={[styles.small, { fontStyle: 'italic', marginBottom: 3 }]}>
                 Para cada componente real: UP = largura / 0,55 m, considerando apenas UPs inteiras
@@ -859,7 +864,7 @@ function renderSaidasPdf(d: any) {
       )}
       <Text style={styles.small}>
         UP = 0,55 m | Largura mínima: porta 0,80 m, escada/acesso 1,20 m | Total agrupado usa C mais
-        restritivo (item 5.3.2.2 NPT 011).
+        restritivo ({itemNorma(ufSai, '011', '5.3.2.2')}).
       </Text>
     </>
   );

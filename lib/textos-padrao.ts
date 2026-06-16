@@ -1,13 +1,20 @@
 // Textos padrão preenchidos automaticamente nos documentos quando o usuário
-// não preenche manualmente. Baseados no modelo SALMERON / NPT do CBPR.
+// não preenche manualmente. Suporta UF (PR=NPT/CBMPR, SC=IN/CBMSC).
+
+import { norma, nptOuIn, rotuloCBM, type UF } from './cbmsc';
+
+function ufDe(d: any): UF {
+  return ((d?.uf as string) || 'PR') === 'SC' ? 'SC' : 'PR';
+}
 
 export function textoEstruturas(d: any): string {
+  const uf = ufDe(d);
   return (
     d?.memorial_construcao?.estruturas ||
     `Execução da obra realizada de acordo com as normas construtivas em vigor, ` +
       `estruturas em concreto armado, executadas de acordo com as características ` +
       `da construção. Atende ao TRRF (resistência ao fogo) de ${d?.trrf_minutos ?? 60} ` +
-      `minutos, conforme NPT 008 do CBPR.`
+      `minutos, conforme ${norma(uf, '008')}.`
   );
 }
 
@@ -19,9 +26,10 @@ export function textoAlvenarias(d: any): string {
 }
 
 export function textoCompartimentacoes(d: any): string {
+  const uf = ufDe(d);
   return (
     d?.memorial_construcao?.compartimentacoes ||
-    `Realizada de acordo com as normas construtivas em vigor e NPT 009, de acordo ` +
+    `Realizada de acordo com as normas construtivas em vigor e ${nptOuIn(uf, '009')}, de acordo ` +
       `com as características da construção. Atende ao TRRF de ${d?.trrf_minutos ?? 60} minutos.`
   );
 }
@@ -50,23 +58,27 @@ export function textoVidros(d: any): string {
 }
 
 export function textoMedidasSeguranca(d: any): string {
+  const uf = ufDe(d);
+  const conjunto = uf === 'SC'
+    ? 'Instruções Normativas (IN) do CBMSC'
+    : 'Código de Segurança Contra Incêndio e Pânico (CSCIP) do CBMPR';
   return (
     d?.memorial_construcao?.medidas_seguranca ||
     `As medidas de segurança contra incêndio e os riscos específicos obedecem aos ` +
-      `requisitos do Código de Segurança Contra Incêndio e Pânico (CSCIP) do Corpo ` +
-      `de Bombeiros Militar do Paraná, conforme detalhado no quadro resumo.`
+      `requisitos das ${conjunto} — ${rotuloCBM(uf)} — conforme detalhado no quadro resumo.`
   );
 }
 
 export function textoAcessoViaturas(d: any): string {
+  const uf = ufDe(d);
   const av = d?.acesso_viaturas || {};
   const largura = av.largura_via_m ? `${av.largura_via_m} m` : '6,00 m';
   const lp = av.largura_portao_m ? `${av.largura_portao_m} m` : '4,00 m';
   const ap = av.altura_portao_m ? `${av.altura_portao_m} m` : '4,50 m';
   return (
     av.observacoes ||
-    `O acesso de viaturas na edificação e áreas de risco é normatizado pela NPT 006 ` +
-      `do CSCIP/CBMPR. A edificação possui via de acesso com largura de ${largura} ` +
+    `O acesso de viaturas na edificação e áreas de risco é normatizado pela ${norma(uf, '006')}. ` +
+      `A edificação possui via de acesso com largura de ${largura} ` +
       `(mínimo regulamentar 6,00 m), portão de ${lp} de largura e ${ap} de altura, ` +
       `compatível com a passagem das viaturas operacionais do Corpo de Bombeiros. ` +
       `O piso da via suporta o peso das viaturas e permite manobra adequada.`
@@ -74,12 +86,13 @@ export function textoAcessoViaturas(d: any): string {
 }
 
 export function textoTermoSaidas(d: any): string {
+  const uf = ufDe(d);
   const ts = d?.termo_saidas || {};
   const ocupacao = d?.descricao_atividade || d?.ocupacao || 'edificação';
   return (
     ts.observacoes ||
-    `Visando a concessão do Certificado de Vistoria de Estabelecimento do Corpo de ` +
-      `Bombeiros Militar do Paraná, atestamos que as PORTAS DE SAÍDA DE EMERGÊNCIA da ` +
+    `Visando a concessão do Certificado de Vistoria de Estabelecimento do ${rotuloCBM(uf)}, ` +
+      `atestamos que as PORTAS DE SAÍDA DE EMERGÊNCIA da ` +
       `edificação classificada como ${ocupacao} permanecerão destrancadas durante todo ` +
       `o horário de funcionamento da edificação, abrindo no sentido do fluxo de saída ` +
       `e com sinalização adequada. Assumimos toda a responsabilidade civil e criminal ` +
@@ -87,26 +100,45 @@ export function textoTermoSaidas(d: any): string {
   );
 }
 
-// Lista padronizada de medidas para o quadro resumo (ANEXO F do modelo CBPR)
-export const MEDIDAS_QUADRO_PADRAO: { nome: string; norma: string }[] = [
-  { nome: 'ACESSO DE VIATURAS NA EDIFICAÇÃO', norma: 'CONFORME NPT 006' },
-  { nome: 'ALARME DE INCÊNDIO', norma: 'CONFORME NPT 019' },
-  { nome: 'BRIGADA DE INCÊNDIO', norma: 'CONFORME NPT 017' },
-  { nome: 'CHUVEIROS AUTOMÁTICOS', norma: 'CONFORME NPT 023' },
-  { nome: 'COMPARTIMENTAÇÃO HORIZONTAL', norma: 'CONFORME NPT 009' },
-  { nome: 'COMPARTIMENTAÇÃO VERTICAL', norma: 'CONFORME NPT 009' },
-  { nome: 'CONTROLE DE FUMAÇA', norma: 'CONFORME NPT 015' },
-  { nome: 'CONTROLE DE MATERIAIS DE ACABAMENTO', norma: 'CONFORME NPT 010' },
-  { nome: 'DETECÇÃO DE INCÊNDIO', norma: 'CONFORME NPT 019' },
-  { nome: 'EXTINTORES', norma: 'CONFORME NPT 021' },
-  { nome: 'HIDRANTES', norma: 'CONFORME NPT 022' },
-  { nome: 'ILUMINAÇÃO DE EMERGÊNCIA', norma: 'CONFORME NPT 018' },
-  { nome: 'PLANO DE EMERGÊNCIA', norma: 'CONFORME NPT 016' },
-  { nome: 'SAÍDAS DE EMERGÊNCIA', norma: 'CONFORME NPT 011' },
-  { nome: 'SEGURANÇA ESTRUTURAL CONTRA INCÊNDIO', norma: 'CONFORME NPT 008' },
-  { nome: 'SEPARAÇÃO ENTRE EDIFICAÇÕES', norma: 'CONFORME NPT 007' },
-  { nome: 'SINALIZAÇÃO DE EMERGÊNCIA', norma: 'CONFORME NPT 020' }
+// Lista padronizada de medidas para o quadro resumo (Anexo F).
+// Cada medida cita a NPT (PR) e a IN (SC) correspondente; o documento
+// escolhe qual mostrar com base na UF do projeto.
+export type MedidaQuadro = { nome: string; npt: string; in: string };
+export const MEDIDAS_QUADRO_PADRAO_BASE: MedidaQuadro[] = [
+  { nome: 'ACESSO DE VIATURAS NA EDIFICAÇÃO', npt: '006', in: '35' },
+  { nome: 'ALARME DE INCÊNDIO', npt: '019', in: '12' },
+  { nome: 'BRIGADA DE INCÊNDIO', npt: '017', in: '28' },
+  { nome: 'CHUVEIROS AUTOMÁTICOS', npt: '023', in: '15' },
+  { nome: 'COMPARTIMENTAÇÃO HORIZONTAL', npt: '009', in: '14' },
+  { nome: 'COMPARTIMENTAÇÃO VERTICAL', npt: '009', in: '14' },
+  { nome: 'CONTROLE DE FUMAÇA', npt: '015', in: '10' },
+  { nome: 'CONTROLE DE MATERIAIS DE ACABAMENTO', npt: '010', in: '18' },
+  { nome: 'DETECÇÃO DE INCÊNDIO', npt: '019', in: '12' },
+  { nome: 'EXTINTORES', npt: '021', in: '06' },
+  { nome: 'HIDRANTES', npt: '022', in: '07' },
+  { nome: 'ILUMINAÇÃO DE EMERGÊNCIA', npt: '018', in: '11' },
+  { nome: 'PLANO DE EMERGÊNCIA', npt: '016', in: '31' },
+  { nome: 'SAÍDAS DE EMERGÊNCIA', npt: '011', in: '09' },
+  { nome: 'SEGURANÇA ESTRUTURAL CONTRA INCÊNDIO', npt: '008', in: '14' },
+  { nome: 'SEPARAÇÃO ENTRE EDIFICAÇÕES', npt: '007', in: '14' },
+  { nome: 'SINALIZAÇÃO DE EMERGÊNCIA', npt: '020', in: '13' }
 ];
+
+// Compatibilidade: mantém o array antigo com rótulos NPT (PR) para não
+// quebrar imports existentes. Para SC use medidasQuadroParaUF.
+export const MEDIDAS_QUADRO_PADRAO: { nome: string; norma: string }[] =
+  MEDIDAS_QUADRO_PADRAO_BASE.map((m) => ({
+    nome: m.nome,
+    norma: `CONFORME NPT ${m.npt}`
+  }));
+
+// Devolve a lista de medidas com o rótulo apropriado para a UF (PR/SC).
+export function medidasQuadroParaUF(uf: UF): { nome: string; norma: string }[] {
+  return MEDIDAS_QUADRO_PADRAO_BASE.map((m) => ({
+    nome: m.nome,
+    norma: uf === 'SC' ? `CONFORME IN ${m.in}` : `CONFORME NPT ${m.npt}`
+  }));
+}
 
 // Verifica se uma das medidas exigidas/condicionais escolhidas casa com o nome do quadro
 export function medidaAtende(d: any, nomeQuadro: string): boolean {

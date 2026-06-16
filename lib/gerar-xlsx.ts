@@ -1,13 +1,14 @@
 // Gera planilha XLSX preenchida com as mesmas seções do PDF/DOCX:
 // 1) Ofício, 2) Classificação consolidada (geral + física + quadro de medidas),
 // 3) Memorial básico de construção, 4) Informações operacionais,
-// 5) Saídas (NPT 011), 6) Carga de incêndio (média ponderada),
+// 5) Saídas (NPT 011 / IN 09), 6) Carga de incêndio (média ponderada),
 // 7) Acesso de viaturas, 8) Termo de saídas de emergência.
 import ExcelJS from 'exceljs';
 import { getMedidasCSCIP } from './cscip-medidas';
 import { dimensionarTodos, DATA_SAIDAS, type Pavimento } from './saidas-npt011';
 import {
   MEDIDAS_QUADRO_PADRAO,
+  medidasQuadroParaUF,
   medidaAtende,
   textoEstruturas,
   textoAlvenarias,
@@ -22,6 +23,17 @@ import {
 } from './textos-padrao';
 import { calcularMediaPonderada, type ItemCargaIncendio } from './carga-incendio';
 import { incluiSecao, type SecaoMemorial } from './secoes-memorial';
+import {
+  norma,
+  nptOuIn,
+  rotuloNormaSaidas,
+  rotuloNormaBrigada,
+  rotuloNormaCarga,
+  rotuloCBM,
+  rotuloConjuntoNormativo,
+  siglaCBM,
+  type UF
+} from './cbmsc';
 
 // Helper: texto consolidado da ocupação (mista ou simples)
 function ocupacaoTexto(d: any): string {
@@ -78,7 +90,7 @@ export async function gerarXlsxBlob(d: any, secoes?: SecaoMemorial[]): Promise<B
   if (incluiSecao(secoes, 'saidas')) {
     const pavs: Pavimento[] = Array.isArray(d.saidas_pavimentos) ? d.saidas_pavimentos : [];
     if (pavs.length > 0) {
-      addAbaSaidas(wb, pavs);
+      addAbaSaidas(wb, pavs, d);
     } else {
       abaSaidasResumo(wb, d);
     }
@@ -119,9 +131,11 @@ function abaOficio(wb: ExcelJS.Workbook, d: any) {
   ws.mergeCells(r, 2, r, 3);
   r += 2;
 
+  const ufx = (d.uf || 'PR') as UF;
   const dest = ws.getCell(r, 2);
-  dest.value =
-    'Ao Comando do Corpo de Bombeiros Militar do Estado do Paraná\nDivisão de Atividades Técnicas - DAT';
+  dest.value = ufx === 'SC'
+    ? `Ao Comando do ${rotuloCBM(ufx)}\nDiretoria de Atividades Técnicas - DAT`
+    : `Ao Comando do ${rotuloCBM(ufx)}\nDivisão de Atividades Técnicas - DAT`;
   dest.alignment = { wrapText: true };
   dest.font = { bold: true };
   ws.mergeCells(r, 2, r, 3);
@@ -135,11 +149,13 @@ function abaOficio(wb: ExcelJS.Workbook, d: any) {
   r += 2;
 
   const corpo = ws.getCell(r, 2);
+  const conjuntoTxt = ufx === 'SC'
+    ? `Instruções Normativas (IN) do ${siglaCBM(ufx)} aplicáveis`
+    : `Código de Segurança Contra Incêndio e Pânico (CSCIP) do ${siglaCBM(ufx)} e demais Normas de Procedimento Técnico (NPTs) aplicáveis`;
   corpo.value =
     `Prezados Senhores,\n\n` +
     `Encaminhamos para análise e aprovação o Plano de Prevenção e Proteção Contra Incêndio (PPCI) ` +
-    `referente à edificação abaixo identificada, em conformidade com o Código de Segurança Contra ` +
-    `Incêndio e Pânico (CSCIP) do CBMPR e demais Normas de Procedimento Técnico (NPTs) aplicáveis.`;
+    `referente à edificação abaixo identificada, em conformidade com o ${conjuntoTxt}.`;
   corpo.alignment = { wrapText: true, vertical: 'top' };
   ws.mergeCells(r, 2, r, 3);
   ws.getRow(r).height = 80;
@@ -240,8 +256,8 @@ function abaClassificacao(wb: ExcelJS.Workbook, d: any) {
     ['Área construída (m²)', d.area_construida_m2 || 0],
     ['Altura (m)', d.altura_edificacao_m || 0],
     ['Pavimentos', d.numero_pavimentos || 1],
-    ['Tipo (NPT 005)', d.tipo_edificacao],
-    ['Classe (NPT 008)', d.classe_npt008],
+    [`Tipo (${nptOuIn((d.uf || 'PR') as UF, '005')})`, d.tipo_edificacao],
+    [`Classe (${nptOuIn((d.uf || 'PR') as UF, '008')})`, d.classe_npt008],
     ['TRRF (min)', d.trrf_minutos]
   ];
   r = listaPares(ws, r, fis);
@@ -271,7 +287,7 @@ function quadroMedidas(ws: ExcelJS.Worksheet, r: number, d: any): number {
   bordasPretas([2, 3, 4].map((col) => ws.getCell(r, col)));
   r++;
 
-  for (const m of MEDIDAS_QUADRO_PADRAO) {
+  for (const m of medidasQuadroParaUF((d.uf || 'PR') as UF)) {
     const atende = medidaAtende(dadosComCscip, m.nome);
     ws.getCell(r, 2).value = m.nome;
     ws.getCell(r, 2).alignment = { wrapText: true, vertical: 'middle' };
@@ -466,7 +482,7 @@ function abaSaidasResumo(wb: ExcelJS.Workbook, d: any) {
 
   let r = 2;
   const t = ws.getCell(r, 2);
-  t.value = 'MEMORIAL DE SAÍDAS DE EMERGÊNCIA (NPT 011)';
+  t.value = `MEMORIAL DE SAÍDAS DE EMERGÊNCIA (${rotuloNormaSaidas((d.uf || 'PR') as UF)})`;
   t.font = { bold: true, size: 14, color: { argb: COR_TITULO } };
   ws.mergeCells(r, 2, r, 3);
   r += 2;
@@ -481,7 +497,7 @@ function abaSaidasResumo(wb: ExcelJS.Workbook, d: any) {
 
 // ============================== 5) Saídas — versão completa (tabela do modelo) ==============================
 
-function addAbaSaidas(wb: ExcelJS.Workbook, pavs: Pavimento[]) {
+function addAbaSaidas(wb: ExcelJS.Workbook, pavs: Pavimento[], d: any) {
   const ws = wb.addWorksheet('5 Saídas', { properties: { defaultRowHeight: 18 } });
   ws.getColumn(1).width = 3;
   ws.getColumn(2).width = 22;
@@ -624,7 +640,7 @@ function addAbaSaidas(wb: ExcelJS.Workbook, pavs: Pavimento[]) {
 
     const final = ws.getCell(r, 2);
     final.value =
-      'Para a presente edificação foram dimensionadas as saídas conforme NPT 011, considerando o C mais restritivo dos ambientes (item 5.3.2.2). UP = 0,55 m.';
+      `Para a presente edificação foram dimensionadas as saídas conforme ${nptOuIn((d.uf || 'PR') as UF, '011')}, considerando o C mais restritivo dos ambientes. UP = 0,55 m.`;
     final.font = { italic: true, size: 10, color: { argb: 'FF7A7974' } };
     final.alignment = { wrapText: true };
     ws.mergeCells(r, 2, r, 6);
@@ -654,7 +670,7 @@ function abaCargaIncendio(wb: ExcelJS.Workbook, d: any) {
   ws.mergeCells(r, 2, r, 7);
   r++;
   const sub = ws.getCell(r, 2);
-  sub.value = 'Método: média ponderada por área (NPT 014 / Anexo A do CSCIP-PR)';
+  sub.value = `Método: média ponderada por área (${rotuloNormaCarga((d.uf || 'PR') as UF)})`;
   sub.font = { italic: true, color: { argb: 'FF7A7974' }, size: 10 };
   ws.mergeCells(r, 2, r, 7);
   r += 2;
@@ -774,7 +790,7 @@ function abaCargaIncendio(wb: ExcelJS.Workbook, d: any) {
 
   const obs = ws.getCell(r, 2);
   obs.value =
-    'Faixas de risco — NPT 014 / CSCIP-PR: Baixo ≤ 300 MJ/m² · Médio ≤ 1.200 MJ/m² · Alto > 1.200 MJ/m².';
+    `Faixas de risco — ${rotuloNormaCarga((d.uf || 'PR') as UF)}: Baixo ≤ 300 MJ/m² · Médio ≤ 1.200 MJ/m² · Alto > 1.200 MJ/m².`;
   obs.font = { italic: true, color: { argb: 'FF7A7974' }, size: 10 };
   obs.alignment = { wrapText: true };
   ws.mergeCells(r, 2, r, 7);
@@ -783,7 +799,7 @@ function abaCargaIncendio(wb: ExcelJS.Workbook, d: any) {
   assinaturaXlsx(ws, r, d);
 }
 
-// ============================== Brigada de incêndio (NPT 017) ==============================
+// ============================== Brigada de incêndio (NPT 017 / IN 28) ==============================
 
 function abaBrigada(wb: ExcelJS.Workbook, d: any) {
   const ws = wb.addWorksheet('Brigada', {
@@ -801,7 +817,9 @@ function abaBrigada(wb: ExcelJS.Workbook, d: any) {
   ws.mergeCells(r, 2, r, 3);
   r++;
   const sub = ws.getCell(r, 2);
-  sub.value = 'NPT 017 / CSCIP-PR — item 6.2';
+  sub.value = (d.uf === 'SC')
+    ? `${rotuloNormaBrigada('SC')} — Anexo A Tabela 3 (GPF por divisão)`
+    : `${rotuloNormaBrigada('PR')} — item 6.2`;
   sub.font = { italic: true, color: { argb: 'FF7A7974' }, size: 10 };
   ws.mergeCells(r, 2, r, 3);
   r += 2;
@@ -825,7 +843,9 @@ function abaBrigada(wb: ExcelJS.Workbook, d: any) {
     ['População ajustada (cálculo)', popAjustada]
   ]);
 
-  r = subtitulo(ws, r, '2. Critério (NPT 017 item 6.2)');
+  r = subtitulo(ws, r, (d.uf === 'SC')
+    ? '2. Critério (IN 28 Anexo A Tabela 3)'
+    : '2. Critério (NPT 017 item 6.2)');
   const crit = ws.getCell(r, 2);
   crit.value =
     '1 brigadista orgânico para cada 200 pessoas, considerando-se o número inteiro imediatamente superior. ' +

@@ -9,6 +9,7 @@ import { calcularCaminhamento, textoCaminhamento } from './caminhamento-npt011';
 import { limparNomeAmbiente } from './nome-ambiente';
 import {
   MEDIDAS_QUADRO_PADRAO,
+  medidasQuadroParaUF,
   medidaAtende,
   textoEstruturas,
   textoAlvenarias,
@@ -29,6 +30,9 @@ import {
   rotuloCBM,
   rotuloConjuntoNormativo,
   siglaCBM,
+  norma,
+  nptOuIn,
+  itemNorma,
   type UF
 } from './cbmsc';
 
@@ -231,7 +235,7 @@ function secClassificacaoEMedidas(d: any): any[] {
       cellText('EXIGIDA', { bold: true, bg: '01696F', color: 'FFFFFF', align: AlignmentType.CENTER })
     ]
   });
-  const linhasMedidas = MEDIDAS_QUADRO_PADRAO.map((m) => {
+  const linhasMedidas = medidasQuadroParaUF((d.uf || 'PR') as UF).map((m) => {
     const exigida = medidaAtende(d, m.nome);
     return new TableRow({
       children: [
@@ -292,8 +296,8 @@ function secClassificacaoEMedidas(d: any): any[] {
       row('Área construída', d.area_construida_m2 ? `${d.area_construida_m2} m²` : '—'),
       row('Altura da edificação', d.altura_edificacao_m ? `${d.altura_edificacao_m} m` : '—'),
       row('Pavimentos', d.numero_pavimentos),
-      row('Tipo (NPT 005)', d.tipo_edificacao),
-      row('Classe (NPT 008)', d.classe_npt008),
+      row(`Tipo (${nptOuIn((d.uf || 'PR') as UF, '005')})`, d.tipo_edificacao),
+      row(`Classe (${nptOuIn((d.uf || 'PR') as UF, '008')})`, d.classe_npt008),
       row('TRRF', d.trrf_minutos != null ? `${d.trrf_minutos} min` : 'sem regra')
     ]),
 
@@ -502,14 +506,14 @@ function renderSaidasDocx(d: any): any[] {
     out.push(
       new Paragraph({
         spacing: { before: 160, after: 40 },
-        children: [new TextRun({ text: 'DIMENSIONAMENTO DAS UNIDADES DE PASSAGEM (item 5.4 NPT 011)', bold: true, size: 18, color: '01696F' })]
+        children: [new TextRun({ text: `DIMENSIONAMENTO DAS UNIDADES DE PASSAGEM (${itemNorma((d.uf || 'PR') as UF, '011', '5.4').toUpperCase()})`, bold: true, size: 18, color: '01696F' })]
       })
     );
     out.push(
       new Paragraph({
         spacing: { after: 80 },
         children: [new TextRun({
-          text: 'Fórmula: N = P / C, onde N = unidades de passagem; P = população do pavimento; C = capacidade da unidade de passagem (Tabela 5 NPT 011). Resultado arredondado para o número inteiro imediatamente superior.',
+          text: `Fórmula: N = P / C, onde N = unidades de passagem; P = população do pavimento; C = capacidade da unidade de passagem (${(d.uf || 'PR') === 'SC' ? 'Tabela 7 da IN 09' : 'Tabela 5 da NPT 011'}). Resultado arredondado para o número inteiro imediatamente superior.`,
           italics: true, size: 16, color: '7A7974'
         })]
       })
@@ -540,7 +544,7 @@ function renderSaidasDocx(d: any): any[] {
       out.push(
         new Paragraph({
           spacing: { before: 160, after: 40 },
-          children: [new TextRun({ text: 'CONFERÊNCIA DOS ELEMENTOS EXECUTADOS (item 5.4.1 NPT 011)', bold: true, size: 18, color: '01696F' })]
+          children: [new TextRun({ text: `CONFERÊNCIA DOS ELEMENTOS EXECUTADOS (${itemNorma((d.uf || 'PR') as UF, '011', '5.4.1').toUpperCase()})`, bold: true, size: 18, color: '01696F' })]
         })
       );
       out.push(
@@ -819,21 +823,21 @@ async function secAcessoViaturas(d: any): Promise<any[]> {
   out.push(...figuraDocx(
     img1,
     'Figura 1 — Largura de via de acesso.',
-    'FONTE: NPT 006 — Acesso de viatura na edificação e áreas de risco.'
+    `FONTE: ${norma((d.uf || 'PR') as UF, '006')} — Acesso de viatura na edificação e áreas de risco.`
   ));
   out.push(...figuraDocx(
     img2,
     'Figura 2 — Largura e altura mínima do portão de acesso.',
-    'FONTE: NPT 006 — Acesso de viatura na edificação e áreas de risco.'
+    `FONTE: ${norma((d.uf || 'PR') as UF, '006')} — Acesso de viatura na edificação e áreas de risco.`
   ));
   out.push(...figuraDocx(
     img3,
     'Figura 3 — Disposição das vias de acesso e retorno de viaturas.',
-    'FONTE: NPT 006 — Acesso de viatura na edificação e áreas de risco.'
+    `FONTE: ${norma((d.uf || 'PR') as UF, '006')} — Acesso de viatura na edificação e áreas de risco.`
   ));
   out.push(p(
     'Recomenda-se que as vias de acesso com extensão superior a 45,00 m possuam retornos em ' +
-    'formato circular, em "Y" ou em "T", conforme modelos de retornos constantes na NPT 005 — ' +
+    `formato circular, em "Y" ou em "T", conforme modelos de retornos constantes na ${norma((d.uf || 'PR') as UF, '005')} — ` +
     'Segurança contra incêndio urbanística.',
     { justify: true }
   ));
@@ -896,10 +900,10 @@ function secBrigada(d: any): any[] {
   const popAjustada = Number(d.brigada_populacao_ajustada) || popOriginal;
   const brig = Number(d.brigadistas_necessarios) || 0;
   return [
-    h1('Memorial de cálculo da brigada de incêndio (NPT 017)'),
+    h1(`Memorial de cálculo da brigada de incêndio (${rotuloNormaBrigada('PR')})`),
     p(
-      'Item 6.2 da NPT 017: a composição da brigada de incêndio será determinada pela população ' +
-      'potencialmente exposta, conforme Tabela 1 da NPT 011, na proporção de 1 brigadista orgânico ' +
+      `Item 6.2 da ${rotuloNormaBrigada('PR')}: a composição da brigada de incêndio será determinada pela população ` +
+      `potencialmente exposta, conforme Tabela 1 da ${rotuloNormaSaidas('PR')}, na proporção de 1 brigadista orgânico ` +
       'para cada 200 (duzentas) pessoas, considerando-se o número inteiro imediatamente superior.',
       { justify: true }
     ),
@@ -928,7 +932,7 @@ function secBrigada(d: any): any[] {
     ),
     tabela([
       row('Resultado', `${brig} brigadista(s) treinado(s)`),
-      row('Critério NPT 017', '1 brigadista a cada 200 pessoas (arredondamento para cima)')
+      row(`Critério ${rotuloNormaBrigada('PR')}`, '1 brigadista a cada 200 pessoas (arredondamento para cima)')
     ]),
     p('Nota: com base no cálculo foi considerado 1 brigadista a cada 200 pessoas.', { italic: true }),
     ...assinatura(d)

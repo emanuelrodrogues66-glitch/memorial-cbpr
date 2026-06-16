@@ -258,7 +258,12 @@ function Etapa1({ dados, up }: any) {
         <Field label="E-mail de contato (opcional)"><input type="email" className="input" value={dados.email_contato} onChange={e => up('email_contato', e.target.value)} /></Field>
         <Field label="Endereço"><input className="input" value={dados.endereco} onChange={e => up('endereco', e.target.value)} /></Field>
         <Field label="Cidade"><input className="input" value={dados.cidade} onChange={e => up('cidade', e.target.value)} /></Field>
-        <Field label="UF"><input className="input" value={dados.uf} onChange={e => up('uf', e.target.value.toUpperCase().slice(0, 2))} /></Field>
+        <Field label="UF (Norma aplicável)">
+          <select className="input" value={dados.uf || 'PR'} onChange={e => up('uf', e.target.value)}>
+            <option value="PR">PR - CBMPR (NPT)</option>
+            <option value="SC">SC - CBMSC (IN)</option>
+          </select>
+        </Field>
         <Field label="CEP"><input className="input" value={dados.cep} onChange={e => up('cep', e.target.value)} /></Field>
       </div>
     </div>

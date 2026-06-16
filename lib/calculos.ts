@@ -7,9 +7,16 @@ import { getMedidasCSCIP, type MedidaCSCIP } from './cscip-medidas';
 import {
   dimensionarTodos,
   populacaoGlobal,
+  DATA_SAIDAS,
   type Pavimento,
-  type DimPavimento
+  type DimPavimento,
+  type DivCsicipSaida
 } from './saidas-npt011';
+import { DATA_SAIDAS_IN09 } from './cbmsc/saidas-in09';
+import { calcularBrigadaSC } from './cbmsc/brigada-in28';
+import { dimensionarIluminacaoSC } from './cbmsc/iluminacao-in11';
+import { classificarCargaSC, descreverClasseCargaSC } from './cbmsc/carga-in03';
+import type { UF } from './cbmsc';
 import {
   calcularMediaPonderada,
   type ItemCargaIncendio,
@@ -218,8 +225,16 @@ export function resumoOcupacao(
   return `Mista (Grupo ${divs.join(' e ')})`;
 }
 
+// Seleciona tabela de capacidades CSCIP conforme UF (PR=NPT 011, SC=IN 09)
+export function tabelaSaidasPorUF(uf?: string): Record<string, DivCsicipSaida> {
+  return (uf || '').toUpperCase() === 'SC' ? DATA_SAIDAS_IN09 : DATA_SAIDAS;
+}
+
 // Função orquestradora: dados parciais -> dados completos calculados
 export function calcular(dados: any) {
+  // UF determina a norma aplicavel: PR usa NPT (CBMPR); SC usa IN (CBMSC).
+  const uf: UF = ((dados.uf || '').toUpperCase() === 'SC' ? 'SC' : 'PR');
+  const tabelaSaidas = tabelaSaidasPorUF(uf);
   const cnae = getCnae(dados.cnae);
   // Memorial de carga de incêndio (média ponderada por área) tem prioridade quando preenchido
   const itensCi: ItemCargaIncendio[] = Array.isArray(dados.carga_incendio_itens)
@@ -245,23 +260,47 @@ export function calcular(dados: any) {
   const up = unidadesPassagem(divisao, pop.valor);
   const grupoPrincipal = cnae?.grupo ?? dados.grupo ?? '';
 
-  // Memorial detalhado de saidas (NPT 011): pavimentos + ambientes
+  // Memorial detalhado de saidas (NPT 011 / IN 09): pavimentos + ambientes
   const pavs: Pavimento[] = Array.isArray(dados.saidas_pavimentos)
     ? (dados.saidas_pavimentos as Pavimento[])
     : [];
 
-  // NPT 017 item 6.2: a brigada usa a populacao potencialmente exposta.
-  // Quando o memorial detalhado de saidas estiver preenchido (pavimentos +
-  // ambientes), usamos a soma real por ambiente (populacao_saidas) em vez
-  // da estimativa por area total da divisao principal. Isso e mais preciso,
-  // respeita ambientes mistos, e bate com o quadro do memorial de saidas.
-  const populacaoSaidasCalc = pavs.length ? populacaoGlobal(pavs) : 0;
+  // Brigada: PR usa NPT 017 (1/200 + 30% Grupo F).
+  //          SC usa IN 28 do CBMSC (GPF por divisao, com isencao, e nivel de treinamento).
+  // Em ambos os casos, quando o memorial detalhado de saidas esta preenchido,
+  // usamos a populacao real somada dos ambientes em vez da estimativa por area.
+  const populacaoSaidasCalc = pavs.length ? populacaoGlobal(pavs, tabelaSaidas) : 0;
   const populacaoParaBrigada = populacaoSaidasCalc > 0 ? populacaoSaidasCalc : pop.valor;
-  const brig = calcularBrigada(
-    populacaoParaBrigada,
-    grupoPrincipal,
-    populacaoSaidasCalc > 0 ? 'saidas' : 'estimativa'
-  );
+
+  let brig: { brigadistas: number; populacao_ajustada: number; descricao: string };
+  let brigadaTreinamento: string | undefined;
+  let brigadaIsento = false;
+
+  if (uf === 'SC') {
+    // IN 28: usa populacao FIXA. Por enquanto adotamos a populacao potencialmente
+    // exposta como aproximacao quando a populacao fixa nao for informada manualmente.
+    const popFixa = Number(dados.brigada_populacao_fixa) || populacaoParaBrigada;
+    const possuiSprinkler = Boolean(dados.brigada_possui_sprinkler);
+    const resSC = calcularBrigadaSC(popFixa, divisao, possuiSprinkler);
+    brig = {
+      brigadistas: resSC.brigadistas,
+      populacao_ajustada: resSC.populacao_usada,
+      descricao: resSC.descricao
+    };
+    brigadaTreinamento = resSC.treinamento;
+    brigadaIsento = resSC.isento;
+  } else {
+    const resPR = calcularBrigada(
+      populacaoParaBrigada,
+      grupoPrincipal,
+      populacaoSaidasCalc > 0 ? 'saidas' : 'estimativa'
+    );
+    brig = {
+      brigadistas: resPR.brigadistas,
+      populacao_ajustada: resPR.populacao_ajustada,
+      descricao: resPR.descricao
+    };
+  }
   const medidas = sugerirMedidas(
     Number(dados.altura_edificacao_m) || 0,
     Number(dados.area_construida_m2) || 0,
@@ -277,8 +316,24 @@ export function calcular(dados: any) {
       )
     : { medidas: [] as MedidaCSCIP[], simplificada: false };
 
-  const saidas_dimensionamento: DimPavimento[] = pavs.length ? dimensionarTodos(pavs) : [];
+  const saidas_dimensionamento: DimPavimento[] = pavs.length
+    ? dimensionarTodos(pavs, tabelaSaidas)
+    : [];
   const populacao_saidas = populacaoSaidasCalc;
+
+  // Iluminacao de emergencia (apenas SC tem dimensionamento agregado nesta versao)
+  const iluminacaoSC = uf === 'SC'
+    ? dimensionarIluminacaoSC({
+        divisao,
+        altura_m: Number(dados.altura_edificacao_m) || 0,
+        area_m2: Number(dados.area_construida_m2) || 0,
+        populacao: populacaoParaBrigada
+      })
+    : null;
+
+  // Classificacao de carga de incendio SC (5 niveis IN 03)
+  const cargaClasseSC = uf === 'SC' ? classificarCargaSC(Number(carga) || 0) : null;
+  const cargaClasseSCDesc = cargaClasseSC ? descreverClasseCargaSC(cargaClasseSC) : null;
 
   // Resumo de ocupação (edificação mista quando houver mais de um CNAE)
   const cnaesArr: any[] = Array.isArray(dados.cnaes) ? dados.cnaes : [];
@@ -312,6 +367,13 @@ export function calcular(dados: any) {
     saidas_dimensionamento,
     populacao_saidas,
     carga_incendio_memorial: memCi,
-    ocupacao_resumo: ocupacaoResumo
+    ocupacao_resumo: ocupacaoResumo,
+    // Campos SC-especificos (preservados quando uf === 'PR')
+    uf,
+    brigada_treinamento: brigadaTreinamento,
+    brigada_isento: brigadaIsento,
+    iluminacao_sc: iluminacaoSC,
+    carga_classe_sc: cargaClasseSC,
+    carga_classe_sc_descricao: cargaClasseSCDesc
   };
 }

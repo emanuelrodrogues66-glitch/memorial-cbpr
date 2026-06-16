@@ -22,6 +22,15 @@ import {
   formatarData
 } from './textos-padrao';
 import { incluiSecao, type SecaoMemorial } from './secoes-memorial';
+import {
+  rotuloNormaSaidas,
+  rotuloNormaBrigada,
+  rotuloNormaCarga,
+  rotuloCBM,
+  rotuloConjuntoNormativo,
+  siglaCBM,
+  type UF
+} from './cbmsc';
 
 // Texto consolidado da ocupação (mista ou simples)
 function ocupacaoTexto(d: any): string {
@@ -179,16 +188,16 @@ function secOficio(d: any): any[] {
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 240 },
-      children: [new TextRun({ text: 'Projeto Técnico de Prevenção a Incêndios e Desastres — CBMPR', size: 18, color: '7A7974' })]
+      children: [new TextRun({ text: `Projeto Técnico de Prevenção a Incêndios e Desastres — ${siglaCBM((d.uf || 'PR') as UF)}`, size: 18, color: '7A7974' })]
     }),
     p(`${local}${local ? ', ' : ''}${data}`),
     p('Ao'),
     p('Serviço de Prevenção Contra Incêndio e Pânico'),
-    p('Corpo de Bombeiros Militar do Paraná'),
+    p(rotuloCBM((d.uf || 'PR') as UF)),
     p(`${d.cidade || '—'}-${d.uf || 'PR'}`),
     p('Ilustríssimos Senhores,'),
     p(
-      'Em conformidade com o CSCIP-CBMPR, vimos por meio deste solicitar a análise e posterior aprovação ' +
+      `Em conformidade com o ${rotuloConjuntoNormativo((d.uf || 'PR') as UF)}, vimos por meio deste solicitar a análise e posterior aprovação ` +
       'do Projeto Técnico de Prevenção a Incêndios e Desastres referente à edificação descrita a seguir:',
       { justify: true }
     ),
@@ -646,8 +655,8 @@ function secCargaIncendio(d: any): any[] {
 
   if (!itens || itens.length === 0) {
     out.push(p(
-      'A carga de incêndio adotada para o dimensionamento das medidas de segurança foi obtida ' +
-      'diretamente da tabela do CSCIP (Anexo A da NPT 014), conforme a ocupação principal da edificação.',
+      `A carga de incêndio adotada para o dimensionamento das medidas de segurança foi obtida ` +
+      `diretamente da tabela da ${rotuloNormaCarga((d.uf || 'PR') as UF)}, conforme a ocupação principal da edificação.`,
       { justify: true }
     ));
     out.push(tabela([
@@ -660,8 +669,8 @@ function secCargaIncendio(d: any): any[] {
   }
 
   out.push(p(
-    'A carga de incêndio total da edificação foi calculada pela média ponderada por área de cada setor ' +
-    'de ocupação, conforme NPT 014 e Anexo A do CSCIP/PR.',
+    `A carga de incêndio total da edificação foi calculada pela média ponderada por área de cada setor ` +
+    `de ocupação, conforme ${rotuloNormaCarga((d.uf || 'PR') as UF)}.`,
     { justify: true }
   ));
 
@@ -837,13 +846,57 @@ async function secAcessoViaturas(d: any): Promise<any[]> {
 // Seção: Brigada de incêndio (NPT 017)
 // ============================================================================
 function secBrigada(d: any): any[] {
+  const uf = (d.uf || 'PR') as UF;
+
+  // SC: dimensionamento por IN-28 (GPF por divisão + isenção + nível de treinamento)
+  if (uf === 'SC') {
+    const brig = Number(d.brigadistas_necessarios) || 0;
+    const popFixa = Number(d.populacao_fixa ?? d.populacao_calculada) || 0;
+    const isento = Boolean(d.brigada_isento);
+    const treino = d.brigada_treinamento || 'Básico';
+    const out: any[] = [
+      h1('Memorial de cálculo da brigada de incêndio (IN 28 do CBMSC)'),
+      p(
+        `Conforme a IN 28 do ${rotuloCBM(uf)}, a brigada de incêndio é dimensionada pelo ` +
+        `Grupo de População Fixa (GPF) aplicável à divisão de ocupação (Anexo A, Tabela 3). ` +
+        `O número de brigadistas é obtido por: brigadistas = teto (população fixa ÷ GPF). ` +
+        `Os níveis de treinamento (Básico, Intermediário, Avançado, Misto) variam por divisão ` +
+        `e por porte da edificação.`,
+        { justify: true }
+      ),
+      h3('Dados de entrada'),
+      tabela([
+        row('Ocupação', ocupacaoTexto(d)),
+        row('Divisão', d.grupo),
+        row('População fixa', `${popFixa} pessoa(s)`)
+      ]),
+      h3('Resultado')
+    ];
+    if (isento) {
+      out.push(p(
+        'Conforme IN 28 do CBMSC, a edificação está dispensada da composição de brigada de ' +
+        'incêndio em função do seu porte e da divisão de ocupação.',
+        { justify: true }
+      ));
+    } else {
+      out.push(tabela([
+        row('Brigadistas necessários', `${brig} brigadista(s)`),
+        row('Nível de treinamento', treino),
+        row('Norma aplicável', rotuloNormaBrigada(uf))
+      ]));
+    }
+    out.push(...assinatura(d));
+    return out;
+  }
+
+  // PR (default): mantém cálculo NPT 017 existente
   const grupo = (d.grupo || '').toString().toUpperCase().trim();
   const isF = grupo.startsWith('F');
   const popOriginal = Number(d.populacao_calculada) || 0;
   const popAjustada = Number(d.brigada_populacao_ajustada) || popOriginal;
   const brig = Number(d.brigadistas_necessarios) || 0;
   return [
-    h1('Memorial de cálculo da brigada de incêndio'),
+    h1('Memorial de cálculo da brigada de incêndio (NPT 017)'),
     p(
       'Item 6.2 da NPT 017: a composição da brigada de incêndio será determinada pela população ' +
       'potencialmente exposta, conforme Tabela 1 da NPT 011, na proporção de 1 brigadista orgânico ' +
@@ -912,7 +965,7 @@ export async function gerarDocxBlob(d: any, secoes?: SecaoMemorial[]): Promise<B
   if (incluiSecao(secoes, 'saidas')) {
     blocos.push({
       key: 'saidas',
-      els: [h1('Memorial de saídas de emergência (NPT 011)'), ...renderSaidasDocx(d), ...assinatura(d)]
+      els: [h1(`Memorial de saídas de emergência (${rotuloNormaSaidas((d.uf || 'PR') as UF)})`), ...renderSaidasDocx(d), ...assinatura(d)]
     });
   }
   if (incluiSecao(secoes, 'carga_incendio')) blocos.push({ key: 'carga_incendio', els: secCargaIncendio(d) });

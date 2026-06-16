@@ -182,22 +182,26 @@ function ceil(n: number) {
 
 // Ambiente é considerado "vazio" (não entra no memorial) se não tem ocupação definida
 // ou se a área líquida é zero/negativa
-export function ambienteTemOcupacao(a: Ambiente): boolean {
+export function ambienteTemOcupacao(
+  a: Ambiente,
+  data: Record<string, DivCsicipSaida> = DATA_SAIDAS
+): boolean {
   const div = (a.div || '').trim();
   if (!div) return false;
-  if (!DATA_SAIDAS[div]) return false;
+  if (!data[div]) return false;
   const area = Number(a.area) || 0;
   const excl = Number(a.excluir) || 0;
   const net = Math.max(0, area - excl);
   // Para vagas, a área é a referência direta
-  if (DATA_SAIDAS[div].special === 'vagas') return area > 0;
+  if (data[div].special === 'vagas') return area > 0;
   return net > 0;
 }
 
 export function calcularPopulacaoAmbiente(
-  a: Ambiente
+  a: Ambiente,
+  data: Record<string, DivCsicipSaida> = DATA_SAIDAS
 ): { pop: number; net: number; unit: 'm²' | 'vagas'; ok: boolean; descricao?: string } | null {
-  const d = DATA_SAIDAS[a.div];
+  const d = data[a.div];
   if (!d) return null;
   const area = Number(a.area) || 0;
   const excl = Number(a.excluir) || 0;
@@ -276,12 +280,15 @@ export type VerificacaoPavimento = {
   detalhes: string;
 };
 
-export function dimensionarPavimento(p: Pavimento): DimPavimento {
+export function dimensionarPavimento(
+  p: Pavimento,
+  data: Record<string, DivCsicipSaida> = DATA_SAIDAS
+): DimPavimento {
   // Filtra ambientes sem ocupação (campo vazio não vai para o memorial)
-  const ambientesValidos = p.ambientes.filter(ambienteTemOcupacao);
+  const ambientesValidos = p.ambientes.filter((a) => ambienteTemOcupacao(a, data));
   const populadosResultados = ambientesValidos.map((a) => ({
     a,
-    r: calcularPopulacaoAmbiente(a)
+    r: calcularPopulacaoAmbiente(a, data)
   }));
 
   const por_ambiente = populadosResultados.map(({ a, r }) => ({
@@ -311,7 +318,7 @@ export function dimensionarPavimento(p: Pavimento): DimPavimento {
     const upMin = COMPONENTE_MIN_UP[mode]; // 1 UP porta, 2 UP escada/acesso
 
     const por_amb = valid.map(({ a, r }) => {
-      const d = DATA_SAIDAS[a.div];
+      const d = data[a.div];
       const C = d[field];
       const upBruto = Math.max(1, ceil(r.pop / C));
       // Por-ambiente é informativo: mostra o cálculo bruto sem aplicar o mínimo agrupado
@@ -328,7 +335,7 @@ export function dimensionarPavimento(p: Pavimento): DimPavimento {
       };
     });
 
-    const Cs = valid.map(({ a }) => DATA_SAIDAS[a.div][field]);
+    const Cs = valid.map(({ a }) => data[a.div][field]);
     const cCritico = Cs.length ? Math.min(...Cs) : 0;
     // Total exigido do pavimento: aplica o mínimo da norma apenas no agrupado
     const totalUp = cCritico ? Math.max(upMin, ceil(populacao_total / cCritico)) : 0;
@@ -426,12 +433,18 @@ function round2(n: number) {
   return Math.round(n * 100) / 100;
 }
 
-export function dimensionarTodos(pavs: Pavimento[]): DimPavimento[] {
-  return pavs.map(dimensionarPavimento);
+export function dimensionarTodos(
+  pavs: Pavimento[],
+  data: Record<string, DivCsicipSaida> = DATA_SAIDAS
+): DimPavimento[] {
+  return pavs.map((p) => dimensionarPavimento(p, data));
 }
 
-export function populacaoGlobal(pavs: Pavimento[]): number {
-  return pavs.reduce((s, p) => s + dimensionarPavimento(p).populacao_total, 0);
+export function populacaoGlobal(
+  pavs: Pavimento[],
+  data: Record<string, DivCsicipSaida> = DATA_SAIDAS
+): number {
+  return pavs.reduce((s, p) => s + dimensionarPavimento(p, data).populacao_total, 0);
 }
 
 // Helpers para criação de itens vazios

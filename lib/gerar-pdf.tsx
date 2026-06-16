@@ -21,6 +21,16 @@ import {
   formatarData
 } from './textos-padrao';
 import { incluiSecao, type SecaoMemorial } from './secoes-memorial';
+import {
+  rotuloNormaSaidas,
+  rotuloNormaBrigada,
+  rotuloNormaIluminacao,
+  rotuloNormaCarga,
+  rotuloCBM,
+  rotuloConjuntoNormativo,
+  siglaCBM,
+  type UF
+} from './cbmsc';
 
 function ocupacaoTexto(d: any): string {
   if (d.ocupacao_resumo && String(d.ocupacao_resumo).trim()) return String(d.ocupacao_resumo);
@@ -126,7 +136,7 @@ function PageOficio({ d }: { d: any }) {
         <View style={styles.capa}>
           <Text style={styles.h1}>OFÍCIO DE APRESENTAÇÃO DO PTPID</Text>
           <Text style={styles.small}>
-            Projeto Técnico de Prevenção a Incêndios e Desastres — CBMPR
+            Projeto Técnico de Prevenção a Incêndios e Desastres — {siglaCBM((d.uf || 'PR') as UF)}
           </Text>
         </View>
 
@@ -137,13 +147,13 @@ function PageOficio({ d }: { d: any }) {
 
         <Text style={[styles.p, { marginTop: 12 }]}>Ao</Text>
         <Text style={styles.p}>Serviço de Prevenção Contra Incêndio e Pânico</Text>
-        <Text style={styles.p}>Corpo de Bombeiros Militar do Paraná</Text>
+        <Text style={styles.p}>{rotuloCBM((d.uf || 'PR') as UF)}</Text>
         <Text style={styles.p}>{d.cidade || '—'}-{d.uf || 'PR'}</Text>
 
         <Text style={[styles.p, { marginTop: 12 }]}>Ilustríssimos Senhores,</Text>
 
         <Text style={[styles.pJustify, { marginTop: 8 }]}>
-          Em conformidade com o CSCIP-CBMPR, vimos por meio deste solicitar a análise
+          Em conformidade com o {rotuloConjuntoNormativo((d.uf || 'PR') as UF)}, vimos por meio deste solicitar a análise
           e posterior aprovação do Projeto Técnico de Prevenção a Incêndios e Desastres
           referente à edificação descrita a seguir:
         </Text>
@@ -304,7 +314,7 @@ function PageInfoOperacional({ d }: { d: any }) {
 function PageSaidas({ d }: { d: any }) {
   return (
       <Page size="A4" style={styles.page}>
-        <Text style={styles.h1}>Memorial de saídas de emergência (NPT 011)</Text>
+        <Text style={styles.h1}>Memorial de saídas de emergência ({rotuloNormaSaidas((d.uf || 'PR') as UF)})</Text>
         {renderSaidasPdf(d)}
         <Assinatura d={d} />
       </Page>
@@ -322,6 +332,47 @@ function PageCargaIncendio({ d }: { d: any }) {
 }
 
 function PageBrigada({ d }: { d: any }) {
+  const uf = (d.uf || 'PR') as UF;
+
+  // SC: cálculo segue IN-28 (GPF por divisão, isenção, treinamento)
+  if (uf === 'SC') {
+    const brig = Number(d.brigadistas_necessarios) || 0;
+    const popFixa = Number(d.populacao_fixa ?? d.populacao_calculada) || 0;
+    const isento = Boolean(d.brigada_isento);
+    const treino = d.brigada_treinamento || 'Básico';
+    return (
+      <Page size="A4" style={styles.page}>
+        <Text style={styles.h1}>Memorial de cálculo da brigada de incêndio (IN 28 do CBMSC)</Text>
+        <Text style={[styles.pJustify, { marginTop: 8 }]}>
+          Conforme a IN 28 do {rotuloCBM(uf)}, a brigada de incêndio é dimensionada
+          pelo Grupo de População Fixa (GPF) aplicável à divisão de ocupação (Anexo A,
+          Tabela 3 da IN 28). O número de brigadistas é obtido por: brigadistas = teto
+          (população fixa ÷ GPF). Níveis de treinamento (Básico, Intermediário,
+          Avançado, Misto) variam por divisão e por porte da edificação.
+        </Text>
+        <Text style={styles.h2}>Dados de entrada</Text>
+        <Linha k="Ocupação" v={ocupacaoTexto(d)} />
+        <Linha k="Divisão" v={d.grupo} />
+        <Linha k="População fixa" v={`${popFixa} pessoa(s)`} />
+        <Text style={styles.h2}>Resultado</Text>
+        {isento ? (
+          <Text style={styles.pJustify}>
+            Conforme IN 28 do CBMSC, a edificação está dispensada da composição de
+            brigada de incêndio em função do seu porte e da divisão de ocupação.
+          </Text>
+        ) : (
+          <>
+            <Linha k="Brigadistas necessários" v={`${brig} brigadista(s)`} />
+            <Linha k="Nível de treinamento" v={treino} />
+            <Linha k="Norma aplicável" v={rotuloNormaBrigada(uf)} />
+          </>
+        )}
+        <Assinatura d={d} />
+      </Page>
+    );
+  }
+
+  // PR (default): mantém cálculo NPT 017 existente
   const grupo = (d.grupo || '').toString().toUpperCase().trim();
   const isF = grupo.startsWith('F');
   const popOriginal = Number(d.populacao_calculada) || 0;
@@ -329,7 +380,7 @@ function PageBrigada({ d }: { d: any }) {
   const brig = Number(d.brigadistas_necessarios) || 0;
   return (
       <Page size="A4" style={styles.page}>
-        <Text style={styles.h1}>Memorial de cálculo da brigada de incêndio</Text>
+        <Text style={styles.h1}>Memorial de cálculo da brigada de incêndio (NPT 017)</Text>
         <Text style={[styles.pJustify, { marginTop: 8 }]}>
           Item 6.2 da NPT 017: a composição da brigada de incêndio será determinada pela
           população potencialmente exposta, conforme Tabela 1 da NPT 011, na proporção de
@@ -526,7 +577,7 @@ function renderCargaIncendio(d: any) {
       <View>
         <Text style={styles.pJustify}>
           A carga de incêndio adotada para o dimensionamento das medidas de segurança
-          foi obtida diretamente da tabela do CSCIP (Anexo A da NPT 014), conforme a
+          foi obtida diretamente da tabela da {rotuloNormaCarga((d.uf || 'PR') as UF)}, conforme a
           ocupação principal da edificação.
         </Text>
         <View style={{ marginTop: 8 }}>
@@ -542,7 +593,7 @@ function renderCargaIncendio(d: any) {
     <>
       <Text style={styles.pJustify}>
         A carga de incêndio total da edificação foi calculada pela média ponderada
-        por área de cada setor de ocupação, conforme NPT 014 e Anexo A do CSCIP/PR.
+        por área de cada setor de ocupação, conforme {rotuloNormaCarga((d.uf || 'PR') as UF)}.
         Cada setor contribui para o cálculo com a sua carga de incêndio específica
         multiplicada pela respectiva área.
       </Text>

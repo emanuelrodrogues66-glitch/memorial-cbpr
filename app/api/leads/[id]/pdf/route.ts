@@ -36,6 +36,7 @@ export async function GET(_req: NextRequest, ctx: { params: { id: string } }) {
       razao_social: data.razao_social,
       cnae: data.cnae,
       cnae_descricao: data.cnae_descricao,
+      uf: data.uf || 'PR',
       divisao: data.divisao,
       area_m2: Number(data.area_m2),
       altura_m: Number(data.altura_m),

@@ -68,6 +68,20 @@ export function ufExtenso(uf: UF): string {
   return uf === 'SC' ? 'Santa Catarina' : 'Paraná';
 }
 
+// Sigla do projeto tecnico de prevencao contra incendio
+// PR: PSCIP (Projeto de Sistema Contra Incendio e Panico)
+// SC: PPCI (Projeto de Prevencao Contra Incendio)
+export function siglaProjeto(uf: UF): string {
+  return uf === 'SC' ? 'PPCI' : 'PSCIP';
+}
+
+// Nome completo do projeto tecnico
+export function nomeProjeto(uf: UF): string {
+  return uf === 'SC'
+    ? 'Projeto de Prevenção Contra Incêndio (PPCI)'
+    : 'Projeto de Sistema Contra Incêndio e Pânico (PSCIP)';
+}
+
 // ============================================================================
 // Mapeamento completo NPT (CBMPR) <-> IN (CBMSC)
 // Fonte: https://portal.cbm.sc.gov.br/index.php/sci/instrucoes-normativas

@@ -6,6 +6,7 @@ import { formatarCnpj, formatarTelefone } from '@/lib/leads';
 import type { MedidaCSCIP } from '@/lib/cscip-medidas';
 import { rotuloModalidade, type ClassificacaoResultado } from '@/lib/classificar-npt001';
 import type { CnaeRow } from '@/lib/types';
+import { siglaProjeto, rotuloCBM, type UF } from '@/lib/cbmsc';
 
 type Etapa = 'cliente' | 'edificacao' | 'detalhes' | 'resultado';
 
@@ -31,6 +32,7 @@ export default function ConsultaForm() {
   const [buscandoCnpj, setBuscandoCnpj] = useState(false);
 
   // Etapa 2 - Edificacao
+  const [uf, setUf] = useState<UF>('PR');
   const [cnaeTermo, setCnaeTermo] = useState('');
   const [cnaeSelecionado, setCnaeSelecionado] = useState<CnaeRow | null>(null);
   const [divisaoManual, setDivisaoManual] = useState('');
@@ -151,6 +153,7 @@ export default function ConsultaForm() {
         email: email.trim() || null,
         cnpj: cnpj.replace(/\D/g, '') || null,
         razao_social: razaoSocial.trim() || null,
+        uf,
         cnae: cnaeSelecionado?.cnae || null,
         cnae_descricao: cnaeSelecionado?.descricao || null,
         divisao: divisaoFinal,
@@ -286,6 +289,28 @@ export default function ConsultaForm() {
                 : 'Informe a atividade e as dimensões da obra.'}
             </p>
 
+            <Field label="UF da edificação *">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setUf('PR')}
+                  className={`flex-1 py-2 px-4 border rounded-md text-sm font-medium ${uf === 'PR' ? 'bg-primary text-white border-primary' : 'bg-white border-border text-muted hover:border-ink'}`}
+                >
+                  Paraná (CBMPR)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUf('SC')}
+                  className={`flex-1 py-2 px-4 border rounded-md text-sm font-medium ${uf === 'SC' ? 'bg-primary text-white border-primary' : 'bg-white border-border text-muted hover:border-ink'}`}
+                >
+                  Santa Catarina (CBMSC)
+                </button>
+              </div>
+              <p className="text-xs text-muted mt-1">
+                Em {uf === 'SC' ? 'SC aplicam-se as Instruções Normativas (IN) do CBMSC' : 'PR aplicam-se as NPTs do CBMPR'}.
+              </p>
+            </Field>
+
             <Field label="Atividade / CNAE">
               <input
                 type="text"
@@ -381,7 +406,7 @@ export default function ConsultaForm() {
           <div className="space-y-5">
             <h2 className="text-xl font-semibold text-ink">Detalhes para classificação</h2>
             <p className="text-sm text-muted">
-              Essas informações determinam se sua edificação precisa de memorial simplificado, projeto técnico (PTPID) ou está dispensada (NPT 001 parte 2).
+              Essas informações determinam se sua edificação precisa de memorial simplificado, projeto técnico ({siglaProjeto(uf)}) ou está dispensada (conforme {uf === 'SC' ? 'IN 01 do CBMSC' : 'NPT 001 parte 2 do CBMPR'}).
             </p>
 
             <div className="grid grid-cols-2 gap-4">
@@ -408,7 +433,7 @@ export default function ConsultaForm() {
               </Field>
             </div>
 
-            <Field label="Tem certificação anterior do CBPR (PPI, PSS, PSCIP aprovado antes de 04/2018)?">
+            <Field label={uf === 'SC' ? 'Tem PPCI aprovado anteriormente pelo CBMSC?' : 'Tem certificação anterior do CBPR (PPI, PSS, PSCIP aprovado antes de 04/2018)?'}>
               <Toggle value={temCertificacao} onChange={setTemCertificacao} />
             </Field>
 
@@ -430,7 +455,7 @@ export default function ConsultaForm() {
                   className="input"
                   placeholder="0 ou em branco"
                 />
-                <p className="text-xs text-muted mt-1">Acima de 1000L exige PTPID</p>
+                <p className="text-xs text-muted mt-1">Acima de 1000L exige {siglaProjeto(uf)}</p>
               </Field>
               <Field label="Central de GLP (kg)">
                 <input
@@ -441,7 +466,7 @@ export default function ConsultaForm() {
                   className="input"
                   placeholder="0 ou em branco"
                 />
-                <p className="text-xs text-muted mt-1">Acima de 190kg exige PTPID</p>
+                <p className="text-xs text-muted mt-1">Acima de 190kg exige {siglaProjeto(uf)}</p>
               </Field>
             </div>
 
@@ -459,7 +484,7 @@ export default function ConsultaForm() {
         {etapa === 'resultado' && resultado && (
           <ResultadoView
             resultado={resultado}
-            dadosEnviados={{ nome, telefone, divisao: divisaoFinal, area, altura, cidade, cnae: cnaeSelecionado }}
+            dadosEnviados={{ nome, telefone, divisao: divisaoFinal, area, altura, cidade, cnae: cnaeSelecionado, uf }}
             onNovaConsulta={() => {
               setEtapa('cliente');
               setResultado(null);
@@ -541,6 +566,7 @@ function ResultadoView({
   onNovaConsulta: () => void;
 }) {
   const { classificacao } = resultado;
+  const uf: UF = (dadosEnviados.uf || 'PR') as UF;
   const exigidas = resultado.medidas.filter((m) => m.status === 'EXIGIDO');
   const condicionais = resultado.medidas.filter((m) => m.status === 'CONDICIONAL');
   const naoSeAplica = resultado.medidas.filter((m) => m.status === 'NAO_SE_APLICA');
@@ -569,7 +595,7 @@ function ResultadoView({
       {/* Modalidade exigida */}
       <div className={`border rounded-lg p-5 ${corClass[classificacao.modalidade]}`}>
         <div className="text-xs uppercase tracking-wider font-semibold opacity-70">Modalidade exigida</div>
-        <div className="text-2xl font-bold mt-1">{rotuloModalidade(classificacao.modalidade)}</div>
+        <div className="text-2xl font-bold mt-1">{rotuloModalidade(classificacao.modalidade, uf)}</div>
         <div className="text-xs mt-1 opacity-70">
           Tipo da edificação: <strong>{rotuloTipo(classificacao.tipo_edificacao)}</strong>
           {resultado.simplificada && <span className="ml-2">· edificação simplificada (Tabela 5)</span>}
@@ -637,13 +663,15 @@ function ResultadoView({
         </div>
 
         <div className="bg-primary/5 border border-primary/30 rounded-lg p-5 text-center">
-          <h3 className="font-semibold text-ink">Precisa do {rotuloModalidade(classificacao.modalidade)}?</h3>
+          <h3 className="font-semibold text-ink">Precisa do {rotuloModalidade(classificacao.modalidade, uf)}?</h3>
           <p className="text-sm text-muted mt-1 mb-3">
-            Elaboramos toda a documentação conforme NPT 001, 005, 008, 011 e 017, pronta para protocolar.
+            {uf === 'SC'
+              ? 'Elaboramos toda a documentação conforme as Instruções Normativas (IN) do CBMSC, pronta para protocolar.'
+              : 'Elaboramos toda a documentação conforme NPT 001, 005, 008, 011 e 017 do CBMPR, pronta para protocolar.'}
           </p>
           <a
             href={`https://wa.me/${(process.env.NEXT_PUBLIC_WHATSAPP_PUBLICO || '5543998439725').replace(/\D/g, '')}?text=${encodeURIComponent(
-              `Olá, fiz a consulta no site. Minha edificação ${dadosEnviados.divisao} (${dadosEnviados.area} m², ${dadosEnviados.altura} m) precisa de ${rotuloModalidade(classificacao.modalidade)}. Gostaria de uma consultoria técnica sem custo.`
+              `Olá, fiz a consulta no site. Minha edificação ${dadosEnviados.divisao} (${dadosEnviados.area} m², ${dadosEnviados.altura} m) em ${uf} precisa de ${rotuloModalidade(classificacao.modalidade, uf)}. Gostaria de uma consultoria técnica sem custo.`
             )}`}
             target="_blank"
             rel="noopener noreferrer"

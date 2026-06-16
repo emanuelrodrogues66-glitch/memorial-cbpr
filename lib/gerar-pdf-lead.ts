@@ -3,6 +3,7 @@ import { Document, Page, Text, View, StyleSheet, pdf } from '@react-pdf/renderer
 import React from 'react';
 import type { MedidaCSCIP } from './cscip-medidas';
 import { rotuloModalidade, type Modalidade, type TipoEdificacao } from './classificar-npt001';
+import type { UF } from './cbmsc';
 
 const styles = StyleSheet.create({
   page: { padding: 40, fontSize: 10, fontFamily: 'Helvetica' },
@@ -62,6 +63,7 @@ type LeadPdfInput = {
   tipo_edificacao?: TipoEdificacao | null;
   justificativas?: string[] | null;
   created_at: string;
+  uf?: UF;
 };
 
 function LeadDocument({ lead }: { lead: LeadPdfInput }) {
@@ -70,6 +72,14 @@ function LeadDocument({ lead }: { lead: LeadPdfInput }) {
   const data = new Date(lead.created_at).toLocaleDateString('pt-BR');
   const modalidade = lead.modalidade || 'MEMORIAL_SIMPLIFICADO';
   const corModal = CORES_MODAL[modalidade];
+  const uf: UF = (lead.uf || 'PR') as UF;
+  const cbmLabel = uf === 'SC' ? 'CBMSC' : 'CBMPR';
+  const normaBase = uf === 'SC'
+    ? 'Classificação e exigências conforme Instruções Normativas (IN) do CBMSC'
+    : 'Classificação e exigências CSCIP/PR (NPT 001 parte 2)';
+  const rodapeNorma = uf === 'SC'
+    ? 'Este documento é uma estimativa baseada nas Instruções Normativas (IN) do CBMSC. A documentação oficial requer análise técnica detalhada por responsável técnico habilitado.'
+    : 'Este documento é uma estimativa baseada nas tabelas do CSCIP/PR e na NPT 001 parte 2 (abril/2024). A documentação oficial requer análise técnica detalhada por responsável técnico habilitado.';
 
   return React.createElement(
     Document,
@@ -82,7 +92,7 @@ function LeadDocument({ lead }: { lead: LeadPdfInput }) {
         View,
         { style: styles.header },
         React.createElement(Text, { style: styles.brand }, 'Memorial CBPR'),
-        React.createElement(Text, { style: styles.subBrand }, 'Consulta gratuita — Classificação e exigências CSCIP/PR (NPT 001 parte 2)')
+        React.createElement(Text, { style: styles.subBrand }, `Consulta gratuita — ${normaBase}`)
       ),
       // Titulo
       React.createElement(Text, { style: styles.h1 }, 'Classificação e exigências de segurança contra incêndio'),
@@ -91,7 +101,7 @@ function LeadDocument({ lead }: { lead: LeadPdfInput }) {
         View,
         { style: [styles.modalBox, { backgroundColor: corModal }] },
         React.createElement(Text, { style: styles.modalLabel }, 'Modalidade exigida'),
-        React.createElement(Text, { style: styles.modalValue }, rotuloModalidade(modalidade)),
+        React.createElement(Text, { style: styles.modalValue }, rotuloModalidade(modalidade, uf)),
         React.createElement(
           Text,
           { style: styles.modalSub },
@@ -127,7 +137,8 @@ function LeadDocument({ lead }: { lead: LeadPdfInput }) {
         View,
         { style: styles.box },
         lead.cnae ? linha('CNAE', `${lead.cnae} — ${lead.cnae_descricao || ''}`) : null,
-        linha('Divisão CSCIP', lead.divisao),
+        linha('UF', `${uf} (${cbmLabel})`),
+        linha(uf === 'SC' ? 'Divisão (IN 01)' : 'Divisão CSCIP', lead.divisao),
         linha('Área', `${lead.area_m2} m²`),
         linha('Altura', `${lead.altura_m} m`),
         lead.populacao != null ? linha('População', `${lead.populacao} pessoas`) : null,
@@ -170,7 +181,7 @@ function LeadDocument({ lead }: { lead: LeadPdfInput }) {
       React.createElement(
         Text,
         { style: styles.footer, fixed: true },
-        'Este documento é uma estimativa baseada nas tabelas do CSCIP/PR e na NPT 001 parte 2 (abril/2024). A documentação oficial requer análise técnica detalhada por responsável técnico habilitado.'
+        rodapeNorma
       )
     )
   );

@@ -198,7 +198,17 @@ export function classificar(input: ClassificacaoInput, hoje: Date = new Date()):
   };
 }
 
-export function rotuloModalidade(m: Modalidade): string {
+export function rotuloModalidade(m: Modalidade, uf: string = 'PR'): string {
+  const ufU = String(uf || 'PR').toUpperCase();
+  if (ufU === 'SC') {
+    switch (m) {
+      case 'DISPENSA': return 'Dispensada';
+      case 'MEMORIAL_SIMPLIFICADO': return 'Memorial Simplificado';
+      case 'PTPID': return 'Projeto Técnico (PPCI)';
+      case 'PTPID_IOT': return 'Projeto Técnico - Ocupação Temporária (PPCI)';
+      case 'ANALISE_NPT002': return 'Análise IN 01 (Parte 2)';
+    }
+  }
   switch (m) {
     case 'DISPENSA': return 'Dispensada';
     case 'MEMORIAL_SIMPLIFICADO': return 'Memorial Simplificado';

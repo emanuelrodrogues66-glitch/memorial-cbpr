@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { saveAs } from 'file-saver';
 import { SECOES_MEMORIAL, SECOES_TODAS, type SecaoMemorial } from '@/lib/secoes-memorial';
+import { nptOuIn, type UF } from '@/lib/cbmsc';
 
 function slug(s: string) {
   return (s || 'memorial')
@@ -151,8 +152,8 @@ function Resumo({ dados }: { dados: any }) {
         <Row k="Risco" v={dados.risco_incendio} />
         <Row k="Área construída" v={dados.area_construida_m2 ? `${dados.area_construida_m2} m²` : '—'} />
         <Row k="Altura" v={dados.altura_edificacao_m ? `${dados.altura_edificacao_m} m` : '—'} />
-        <Row k="Tipo (NPT 005)" v={dados.tipo_edificacao} />
-        <Row k="Classe (NPT 008)" v={dados.classe_npt008} />
+        <Row k={`Tipo (${nptOuIn((dados.uf || 'PR') as UF, '005')})`} v={dados.tipo_edificacao} />
+        <Row k={`Classe (${nptOuIn((dados.uf || 'PR') as UF, '008')})`} v={dados.classe_npt008} />
         <Row k="TRRF" v={dados.trrf_minutos != null ? `${dados.trrf_minutos} min` : '—'} />
         <Row k="População" v={dados.populacao_calculada} />
         <Row k="Brigadistas" v={dados.brigadistas_necessarios} />

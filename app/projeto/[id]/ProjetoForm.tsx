@@ -19,6 +19,7 @@ import {
   type DimPavimento
 } from '@/lib/saidas-npt011';
 import { novoItemCargaIncendio, type ItemCargaIncendio } from '@/lib/carga-incendio';
+import { nptOuIn, itemNorma, siglaProjeto, type UF } from '@/lib/cbmsc';
 
 const ETAPAS = [
   '1. Dados da obra',
@@ -417,7 +418,7 @@ function Etapa3({ dados, up, calc }: any) {
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-bold">Características físicas</h2>
-      <p className="text-sm text-muted">Áreas e altura conforme NPT 005 / Tabela 1.</p>
+      <p className="text-sm text-muted">{`Áreas e altura conforme ${nptOuIn((dados.uf || 'PR') as UF, '005')} / Tabela 1.`}</p>
       <div className="grid sm:grid-cols-2 gap-3">
         <Field label="Área total do terreno (m²)"><input type="number" min="0" step="0.01" className="input" value={dados.area_total_m2} onChange={e => up('area_total_m2', Number(e.target.value))} /></Field>
         <Field label="Área construída (m²)"><input type="number" min="0" step="0.01" className="input" value={dados.area_construida_m2} onChange={e => up('area_construida_m2', Number(e.target.value))} /></Field>
@@ -425,8 +426,8 @@ function Etapa3({ dados, up, calc }: any) {
         <Field label="Número de pavimentos"><input type="number" min="1" className="input" value={dados.numero_pavimentos} onChange={e => up('numero_pavimentos', Number(e.target.value))} /></Field>
       </div>
       <div className="rounded-md bg-surface border border-border p-4 text-sm grid sm:grid-cols-3 gap-3">
-        <Info label="Tipo (NPT 005)" value={calc.tipo_edificacao} />
-        <Info label="Classe (NPT 008)" value={calc.classe_npt008} />
+        <Info label={`Tipo (${nptOuIn((dados.uf || 'PR') as UF, '005')})`} value={calc.tipo_edificacao} />
+        <Info label={`Classe (${nptOuIn((dados.uf || 'PR') as UF, '008')})`} value={calc.classe_npt008} />
         <Info label="TRRF (min)" value={calc.trrf_minutos != null ? String(calc.trrf_minutos) : 'sem regra'} />
       </div>
     </div>
@@ -527,7 +528,7 @@ function Etapa4({ dados, up, calc, projetoId, revitToken }: any) {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-xl font-bold">Memorial de saídas (NPT 011)</h2>
+        <h2 className="text-xl font-bold">{`Memorial de saídas (${nptOuIn((dados.uf || 'PR') as UF, '011')})`}</h2>
         <p className="text-sm text-muted mt-1">
           Dimensione as saídas por pavimento e bloco. Para cada pavimento, informe os ambientes
           (com divisão CSCIP e área útil) e os componentes a calcular (porta, escada, acesso).
@@ -547,7 +548,7 @@ function Etapa4({ dados, up, calc, projetoId, revitToken }: any) {
             <div className="font-semibold text-ink">Leiaute (layout) apresentado em projeto</div>
             <div className="text-muted mt-0.5">
               Marque quando o projeto apresenta o leiaute de mobiliário/ocupação. Mantém o
-              caminhamento integral da Tabela 2 (Anexo B NPT 011). Desmarcado aplica a redução
+              caminhamento integral da Tabela 2 (Anexo B {nptOuIn((dados.uf || 'PR') as UF, '011')}). Desmarcado aplica a redução
               de 30% prevista para projetos sem leiaute (Nota B / Tabela 2A).
             </div>
           </div>
@@ -574,6 +575,7 @@ function Etapa4({ dados, up, calc, projetoId, revitToken }: any) {
             key={p.id}
             pav={p}
             dim={dim}
+            uf={(dados.uf || 'PR') as UF}
             onLabel={(label) => patchPav(p.id, { label })}
             onRemove={() => removePav(p.id)}
             onToggleModo={(m) => toggleModo(p.id, m)}
@@ -643,6 +645,7 @@ function DivSelect({
 function PavimentoCard({
   pav,
   dim,
+  uf,
   onLabel,
   onRemove,
   onToggleModo,
@@ -655,6 +658,7 @@ function PavimentoCard({
 }: {
   pav: Pavimento;
   dim?: DimPavimento;
+  uf: UF;
   onLabel: (v: string) => void;
   onRemove: () => void;
   onToggleModo: (m: ComponenteSaida) => void;
@@ -832,7 +836,7 @@ function PavimentoCard({
           ))}
           <p className="text-[11px] text-muted mt-1">
             UP = 0,55 m | Largura mínima: porta 0,80 m (1 UP), escada/acesso 1,20 m (2 UP) | Total
-            agrupado usa C mais restritivo (item 5.3.2.2 NPT 011).
+            agrupado usa C mais restritivo ({itemNorma(uf, '011', '5.3.2.2')}).
           </p>
         </div>
       )}
@@ -1035,9 +1039,9 @@ function Etapa5({ dados, calc }: any) {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-bold">Brigada de incêndio (NPT 017)</h2>
+      <h2 className="text-xl font-bold">{`Brigada de incêndio (${nptOuIn((dados.uf || 'PR') as UF, '017')})`}</h2>
       <p className="text-sm text-muted">
-        Cálculo conforme NPT 017 item 6.2: 1 brigadista para cada 200 pessoas,
+        Cálculo conforme {itemNorma((dados.uf || 'PR') as UF, '017', '6.2')}: 1 brigadista para cada 200 pessoas,
         arredondado para o inteiro imediatamente superior. Para edificações do
         Grupo F (locais de reunião de público) aplica-se acréscimo de 30% sobre a população.
       </p>
@@ -1279,7 +1283,7 @@ function EtapaCargaIncendio({ dados, up, calc }: any) {
       <div>
         <h2 className="text-xl font-bold">Memorial de cálculo de carga de incêndio</h2>
         <p className="text-sm text-muted mt-1">
-          Média ponderada por área de cada setor (NPT 014 / Anexo A do CSCIP). Quando
+          Média ponderada por área de cada setor ({(dados.uf || 'PR') === 'SC' ? 'IN 03 do CBMSC' : 'NPT 014 / Anexo A do CSCIP'}). Quando
           preenchido, este memorial substitui o valor pontual da classificação por CNAE.
         </p>
       </div>
@@ -1628,7 +1632,7 @@ function EtapaComplementar({ dados, up }: any) {
 
       {/* Acesso a viaturas */}
       <div className="card">
-        <h3 className="font-semibold text-ink">Acesso a viaturas (NPT 006)</h3>
+        <h3 className="font-semibold text-ink">{`Acesso a viaturas (${nptOuIn((dados.uf || 'PR') as UF, '006')})`}</h3>
         <div className="grid sm:grid-cols-3 gap-3 mt-3">
           <Field label="Largura da via (m)" hint="Mínimo 6,00 m">
             <input type="number" step="0.1" className="input" value={av.largura_via_m ?? ''} onChange={(e) => upAv('largura_via_m', e.target.value === '' ? null : Number(e.target.value))} />

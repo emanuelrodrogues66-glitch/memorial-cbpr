@@ -15,6 +15,7 @@ const LeadSchema = z.object({
   cnpj: z.string().optional().nullable(),
   razao_social: z.string().optional().nullable(),
   // Edificacao
+  uf: z.enum(['PR', 'SC']).optional().default('PR'),
   cnae: z.string().optional().nullable(),
   cnae_descricao: z.string().optional().nullable(),
   divisao: z.string().regex(/^[A-M]-\d{1,2}$/),
@@ -80,6 +81,7 @@ export async function POST(req: NextRequest) {
       email: lead.email || null,
       cnpj: lead.cnpj || null,
       razao_social: lead.razao_social || null,
+      uf: lead.uf || 'PR',
       cnae: lead.cnae || null,
       cnae_descricao: lead.cnae_descricao || null,
       divisao: lead.divisao,
@@ -142,7 +144,7 @@ async function notificarLeadNovo(
     <h2>Novo lead — Memorial CBPR</h2>
     <p><strong>${escapeHtml(lead.nome)}</strong> consultou as exigências para uma edificação.</p>
     <p style="background:#01696F;color:white;padding:10px;border-radius:4px;font-weight:bold;display:inline-block">
-      Modalidade exigida: ${rotuloModalidade(classificacao.modalidade)}
+      Modalidade exigida: ${rotuloModalidade(classificacao.modalidade, lead.uf)} · UF: ${lead.uf}
     </p>
     <h3>Cliente</h3>
     <ul>
@@ -161,7 +163,7 @@ async function notificarLeadNovo(
       ${lead.cidade ? `<li>Cidade: ${escapeHtml(lead.cidade)}</li>` : ''}
       <li>Tipo: ${classificacao.tipo_edificacao}</li>
     </ul>
-    <h3>Por que ${rotuloModalidade(classificacao.modalidade)}?</h3>
+    <h3>Por que ${rotuloModalidade(classificacao.modalidade, lead.uf)}?</h3>
     <ul>
       ${classificacao.justificativas.map((j) => `<li>${escapeHtml(j)}</li>`).join('')}
     </ul>
@@ -182,7 +184,7 @@ async function notificarLeadNovo(
     body: JSON.stringify({
       from: process.env.RESEND_FROM || 'Memorial CBPR <onboarding@resend.dev>',
       to: destino,
-      subject: `Novo lead [${rotuloModalidade(classificacao.modalidade)}]: ${lead.nome} - ${lead.divisao}`,
+      subject: `Novo lead [${lead.uf}] [${rotuloModalidade(classificacao.modalidade, lead.uf)}]: ${lead.nome} - ${lead.divisao}`,
       html
     })
   });

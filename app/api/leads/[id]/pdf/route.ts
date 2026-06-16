@@ -48,6 +48,8 @@ export async function GET(_req: NextRequest, ctx: { params: { id: string } }) {
       modalidade: data.modalidade,
       tipo_edificacao: data.tipo_edificacao,
       justificativas: data.justificativas || [],
+      risco_sc: data.risco_sc || null,
+      tipo_processo_sc: data.tipo_processo_sc || null,
       created_at: data.created_at
     });
 

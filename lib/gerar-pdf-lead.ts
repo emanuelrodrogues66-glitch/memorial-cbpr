@@ -3,6 +3,12 @@ import { Document, Page, Text, View, StyleSheet, pdf } from '@react-pdf/renderer
 import React from 'react';
 import type { MedidaCSCIP } from './cscip-medidas';
 import { rotuloModalidade, type Modalidade, type TipoEdificacao } from './classificar-npt001';
+import {
+  rotuloRiscoSC,
+  rotuloProcessoSC,
+  type RiscoSC,
+  type TipoProcessoSC
+} from './classificar-in01-sc';
 import type { UF } from './cbmsc';
 
 const styles = StyleSheet.create({
@@ -35,6 +41,14 @@ const CORES_MODAL: Record<Modalidade, string> = {
   ANALISE_NPT002: '#964219'
 };
 
+const CORES_RISCO_SC: Record<RiscoSC, string> = {
+  I: '#437A22',     // Verde - dispensado
+  II: '#01696F',    // Teal - simplificado
+  III: '#964219',   // Laranja - simplificado com previa
+  IV: '#A12C7B',    // Magenta - ordinario
+  V: '#7A1F1F'      // Vermelho escuro - alto risco
+};
+
 const ROTULO_TIPO: Record<TipoEdificacao, string> = {
   NOVA: 'Nova',
   EXISTENTE_TIPO_2: 'Existente tipo 2',
@@ -64,6 +78,9 @@ type LeadPdfInput = {
   justificativas?: string[] | null;
   created_at: string;
   uf?: UF;
+  // Campos SC
+  risco_sc?: RiscoSC | null;
+  tipo_processo_sc?: TipoProcessoSC | null;
 };
 
 function LeadDocument({ lead }: { lead: LeadPdfInput }) {
@@ -71,14 +88,24 @@ function LeadDocument({ lead }: { lead: LeadPdfInput }) {
   const condicionais = lead.medidas.filter((m) => m.status === 'CONDICIONAL');
   const data = new Date(lead.created_at).toLocaleDateString('pt-BR');
   const modalidade = lead.modalidade || 'MEMORIAL_SIMPLIFICADO';
-  const corModal = CORES_MODAL[modalidade];
   const uf: UF = (lead.uf || 'PR') as UF;
+  const usaSC = uf === 'SC' && !!lead.risco_sc;
+  const corCard = usaSC
+    ? CORES_RISCO_SC[lead.risco_sc as RiscoSC]
+    : CORES_MODAL[modalidade];
+  const tituloCard = usaSC ? 'Classificação do risco' : 'Modalidade exigida';
+  const valorCard = usaSC
+    ? rotuloRiscoSC(lead.risco_sc as RiscoSC)
+    : rotuloModalidade(modalidade, uf);
+  const subCard = usaSC
+    ? `Processo: ${rotuloProcessoSC(lead.tipo_processo_sc as TipoProcessoSC)}`
+    : `Tipo da edificação: ${ROTULO_TIPO[lead.tipo_edificacao || 'NOVA']}${lead.simplificada ? ' · edificação simplificada (Tabela 5)' : ''}`;
   const cbmLabel = uf === 'SC' ? 'CBMSC' : 'CBMPR';
   const normaBase = uf === 'SC'
-    ? 'Classificação e exigências conforme Instruções Normativas (IN) do CBMSC'
+    ? 'Classificação e exigências conforme IN 01 (Partes 1 e 2) do CBMSC'
     : 'Classificação e exigências CSCIP/PR (NPT 001 parte 2)';
   const rodapeNorma = uf === 'SC'
-    ? 'Este documento é uma estimativa baseada nas Instruções Normativas (IN) do CBMSC. A documentação oficial requer análise técnica detalhada por responsável técnico habilitado.'
+    ? 'Este documento é uma estimativa baseada na IN 01 (Partes 1 e 2) do CBMSC. A documentação oficial requer análise técnica detalhada por responsável técnico habilitado.'
     : 'Este documento é uma estimativa baseada nas tabelas do CSCIP/PR e na NPT 001 parte 2 (abril/2024). A documentação oficial requer análise técnica detalhada por responsável técnico habilitado.';
 
   return React.createElement(
@@ -96,17 +123,13 @@ function LeadDocument({ lead }: { lead: LeadPdfInput }) {
       ),
       // Titulo
       React.createElement(Text, { style: styles.h1 }, 'Classificação e exigências de segurança contra incêndio'),
-      // Modalidade exigida
+      // Card principal: Modalidade (PR) ou Risco I-V (SC)
       React.createElement(
         View,
-        { style: [styles.modalBox, { backgroundColor: corModal }] },
-        React.createElement(Text, { style: styles.modalLabel }, 'Modalidade exigida'),
-        React.createElement(Text, { style: styles.modalValue }, rotuloModalidade(modalidade, uf)),
-        React.createElement(
-          Text,
-          { style: styles.modalSub },
-          `Tipo da edificação: ${ROTULO_TIPO[lead.tipo_edificacao || 'NOVA']}${lead.simplificada ? ' · edificação simplificada (Tabela 5)' : ''}`
-        )
+        { style: [styles.modalBox, { backgroundColor: corCard }] },
+        React.createElement(Text, { style: styles.modalLabel }, tituloCard),
+        React.createElement(Text, { style: styles.modalValue }, valorCard),
+        React.createElement(Text, { style: styles.modalSub }, subCard)
       ),
       // Justificativas
       lead.justificativas && lead.justificativas.length > 0

@@ -122,7 +122,9 @@ export async function POST(req: NextRequest) {
       simplificada,
       modalidade: classificacao.modalidade,
       tipo_edificacao: classificacao.tipo_edificacao,
-      justificativas: classificacao.justificativas,
+      justificativas: classificacao_sc ? classificacao_sc.justificativas : classificacao.justificativas,
+      risco_sc: classificacao_sc?.risco || null,
+      tipo_processo_sc: classificacao_sc?.tipo_processo || null,
       status: 'novo'
     })
     .select('id, created_at')

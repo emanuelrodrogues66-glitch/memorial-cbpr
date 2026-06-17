@@ -109,6 +109,13 @@ export default function ProjetoForm({ projeto, profile }: { projeto: any; profil
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [etapa]);
 
+  // Salva automaticamente 1,5s após qualquer alteração nos dados
+  useEffect(() => {
+    const t = setTimeout(salvar, 1500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dados]);
+
   return (
     <section className="max-w-5xl mx-auto px-6 py-8">
       <Stepper etapa={etapa} onChange={setEtapa} />

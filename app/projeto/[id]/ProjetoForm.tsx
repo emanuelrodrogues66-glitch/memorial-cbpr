@@ -744,17 +744,33 @@ function PavimentoCard({
                   onChange={(e) => onPatchAmb(a.id, { area: Number(e.target.value) })}
                 />
               </div>
-              <div className="sm:col-span-2">
-                <label className="label">Excluir (m²)</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  className="input"
-                  value={a.excluir || ''}
-                  onChange={(e) => onPatchAmb(a.id, { excluir: Number(e.target.value) })}
-                />
-              </div>
+              {['A-1', 'A-2', 'A-3'].includes(a.div) ? (
+                <div className="sm:col-span-2">
+                  <label className="label">Nº de dormitórios</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    className="input"
+                    placeholder="ex.: 10"
+                    value={a.dormitorios || ''}
+                    onChange={(e) => onPatchAmb(a.id, { dormitorios: Number(e.target.value) })}
+                  />
+                  <p className="text-xs text-muted mt-1">2 pessoas/dormitório — NPT 011</p>
+                </div>
+              ) : (
+                <div className="sm:col-span-2">
+                  <label className="label">Excluir (m²)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="input"
+                    value={a.excluir || ''}
+                    onChange={(e) => onPatchAmb(a.id, { excluir: Number(e.target.value) })}
+                  />
+                </div>
+              )}
               <div className="sm:col-span-1 flex justify-end">
                 {pav.ambientes.length > 1 && (
                   <button

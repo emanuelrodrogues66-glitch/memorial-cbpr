@@ -713,19 +713,27 @@ function renderSaidasPdf(d: any) {
           <View style={styles.tableHead}>
             <Text style={styles.cellL}>Ambiente</Text>
             <Text style={[styles.cellR, { width: '22%' }]}>Ocupação</Text>
-            <Text style={styles.cellR}>Área (m²)</Text>
-            <Text style={[styles.cellR, { width: '22%' }]}>População/m²</Text>
+            <Text style={styles.cellR}>Qtd.</Text>
+            <Text style={[styles.cellR, { width: '22%' }]}>Critério</Text>
             <Text style={styles.cellR}>Pop. total</Text>
           </View>
-          {dim.por_ambiente.map((a) => (
+          {dim.por_ambiente.map((a) => {
+            const isDorm = a.unit === 'dorm';
+            const netLabel = isDorm
+              ? `${a.net} dorm.`
+              : a.unit === 'vagas'
+              ? `${a.net} vagas`
+              : `${a.net.toFixed(2)} m²`;
+            return (
             <View key={a.id} style={styles.tableRow}>
               <Text style={styles.cellL}>{limparNomeAmbiente(a.nome)}</Text>
               <Text style={[styles.cellR, { width: '22%' }]}>{a.divisao}</Text>
-              <Text style={styles.cellR}>{a.net.toFixed(2)}</Text>
+              <Text style={styles.cellR}>{netLabel}</Text>
               <Text style={[styles.cellR, { width: '22%' }]}>{popDesc(a.divisao)}</Text>
               <Text style={styles.cellR}>{a.pop} pess.</Text>
             </View>
-          ))}
+            );
+          })}
           <View style={styles.tableTotal}>
             <Text style={styles.cellL}>População total do pavimento</Text>
             <Text style={[styles.cellR, { width: '22%' }]}></Text>

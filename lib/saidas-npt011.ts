@@ -22,7 +22,7 @@ export type DivCsicipSaida = {
 export const DATA_SAIDAS: Record<string, DivCsicipSaida> = {
   'A-1': { pop: '2 por dormitório', coef: null, acc: 60, esc: 45, port: 100, special: 'dorm' },
   'A-2': { pop: '2 por dormitório', coef: null, acc: 60, esc: 45, port: 100, special: 'dorm' },
-  'A-3': { pop: '1 por 4 m² (alojamento)', coef: 1 / 4, acc: 60, esc: 45, port: 100 },
+  'A-3': { pop: '2 por dormitório (alojamento)', coef: null, acc: 60, esc: 45, port: 100, special: 'dorm' },
 
   'B-1': { pop: '1 por 15 m²', coef: 1 / 15, acc: 60, esc: 45, port: 100 },
   'B-2': { pop: '1 por 15 m²', coef: 1 / 15, acc: 60, esc: 45, port: 100 },
@@ -149,6 +149,7 @@ export type Ambiente = {
   div: string;
   area: number; // área útil em m²
   excluir: number; // área a excluir em m²
+  dormitorios?: number; // nº de dormitórios — usado para A-1, A-2, A-3 (2 pessoas/dorm)
 };
 
 // Item real informado pelo usuário (porta/escada/acesso instalado)
@@ -194,26 +195,42 @@ export function ambienteTemOcupacao(
   const net = Math.max(0, area - excl);
   // Para vagas, a área é a referência direta
   if (data[div].special === 'vagas') return area > 0;
+  // Para dormitórios (A-1, A-2, A-3), o critério é ter ao menos 1 dormitório informado
+  if (data[div].special === 'dorm') return (Number(a.dormitorios) || 0) > 0;
   return net > 0;
 }
 
 export function calcularPopulacaoAmbiente(
   a: Ambiente,
   data: Record<string, DivCsicipSaida> = DATA_SAIDAS
-): { pop: number; net: number; unit: 'm²' | 'vagas'; ok: boolean; descricao?: string } | null {
+): { pop: number; net: number; unit: 'm²' | 'vagas' | 'dorm'; ok: boolean; descricao?: string } | null {
   const d = data[a.div];
   if (!d) return null;
   const area = Number(a.area) || 0;
   const excl = Number(a.excluir) || 0;
   const net = Math.max(0, area - excl);
-  if (d.special === 'dorm' || d.special === 'leito') {
+  if (d.special === 'dorm') {
+    const dorms = Number(a.dormitorios) || 0;
+    if (dorms <= 0) {
+      return {
+        pop: 0,
+        net: 0,
+        unit: 'dorm',
+        ok: false,
+        descricao: 'Informe o número de dormitórios para calcular a população (2 pessoas/dormitório — NPT 011).'
+      };
+    }
+    // NPT 011: 2 pessoas por dormitório para A-1, A-2, A-3
+    return { pop: dorms * 2, net: dorms, unit: 'dorm', ok: true };
+  }
+  if (d.special === 'leito') {
     // dormitório/leito: requer entrada específica (não suportada agora)
     return {
       pop: 0,
       net,
       unit: 'm²',
       ok: false,
-      descricao: 'Cálculo por dormitório/leito não suportado nesta etapa — informe população manual.'
+      descricao: 'Cálculo por leito não suportado nesta etapa — informe população manual.'
     };
   }
   if (d.special === 'vagas') {
@@ -251,7 +268,7 @@ export type DimPavimento = {
     nome: string;
     divisao: string;
     net: number;
-    unit: 'm²' | 'vagas';
+    unit: 'm²' | 'vagas' | 'dorm';
     pop: number;
     erro?: string;
   }>;
@@ -460,7 +477,7 @@ export function novoPavimento(id: number, label?: string): Pavimento {
 }
 
 export function novoAmbiente(id: number): Ambiente {
-  return { id, nome: '', div: '', area: 0, excluir: 0 };
+  return { id, nome: '', div: '', area: 0, excluir: 0, dormitorios: 0 };
 }
 
 export function novaSaidaReal(id: number, tipo: ComponenteSaida = 'porta'): SaidaReal {

@@ -39,3 +39,6 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ## Deploy
 
 Hospedado na Vercel: https://memorial-cbpr.vercel.app
+
+git commit --allow-empty -m "trigger deploy"
+git push

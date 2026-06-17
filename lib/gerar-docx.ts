@@ -463,22 +463,28 @@ function renderSaidasDocx(d: any): any[] {
       children: [
         cellText('Ambiente', { bold: true, bg: 'F2F2F2' }),
         cellText('Ocupação', { bold: true, bg: 'F2F2F2', align: AlignmentType.CENTER }),
-        cellText('Área (m²)', { bold: true, bg: 'F2F2F2', align: AlignmentType.CENTER }),
-        cellText('População/m²', { bold: true, bg: 'F2F2F2', align: AlignmentType.CENTER }),
+        cellText('Qtd.', { bold: true, bg: 'F2F2F2', align: AlignmentType.CENTER }),
+        cellText('Critério', { bold: true, bg: 'F2F2F2', align: AlignmentType.CENTER }),
         cellText('População total', { bold: true, bg: 'F2F2F2', align: AlignmentType.CENTER })
       ]
     });
-    const dataRows = dim.por_ambiente.map((a) =>
-      new TableRow({
+    const dataRows = dim.por_ambiente.map((a) => {
+      const isDorm = a.unit === 'dorm';
+      const netLabel = isDorm
+        ? `${a.net} dorm.`
+        : a.unit === 'vagas'
+        ? `${a.net} vagas`
+        : `${a.net.toFixed(2)} m²`;
+      return new TableRow({
         children: [
           cellText(limparNomeAmbiente(a.nome)),
           cellText(a.divisao, { align: AlignmentType.CENTER }),
-          cellText(a.net.toFixed(2), { align: AlignmentType.CENTER }),
+          cellText(netLabel, { align: AlignmentType.CENTER }),
           cellText(DATA_SAIDAS[a.divisao]?.pop ?? '—', { align: AlignmentType.CENTER }),
           cellText(`${a.pop} pessoas`, { align: AlignmentType.CENTER, bold: true })
         ]
-      })
-    );
+      });
+    });
     const totalRow = new TableRow({
       children: [
         cellText('População total do pavimento', { bold: true, bg: 'FFF2CC' }),

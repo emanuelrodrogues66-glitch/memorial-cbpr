@@ -144,15 +144,28 @@ export function medidasQuadroParaUF(uf: UF): { nome: string; norma: string }[] {
 export function medidaAtende(d: any, nomeQuadro: string): boolean {
   const escolhidas: string[] = d?.medidas_protecao ?? [];
   const cscip: { nome: string; status: string }[] = d?.medidas_cscip ?? [];
+  const simplificada: boolean = d?.cscip_simplificada ?? false;
   const nlc = nomeQuadro.toLowerCase();
-  // Match por palavra-chave
+  const chave = palavraChave(nlc);
+
+  // Se a edificação se enquadra na Tabela 5 (memorial simplificado),
+  // usa EXCLUSIVAMENTE medidas_cscip — que reflete a tabela oficial.
+  // Isso evita que sugerirMedidas (baseada em heurísticas de área/altura)
+  // adicione Brigada e Hidrante indevidamente para divisões como F-2.
+  if (simplificada) {
+    return cscip.some(
+      (m) => m.status === 'EXIGIDO' && m.nome.toLowerCase().includes(chave)
+    );
+  }
+
+  // Fora da Tabela 5: verifica medidas_cscip primeiro, depois medidas_protecao
   for (const m of cscip) {
-    if (m.status === 'EXIGIDO' && m.nome.toLowerCase().includes(palavraChave(nlc))) {
+    if (m.status === 'EXIGIDO' && m.nome.toLowerCase().includes(chave)) {
       return true;
     }
   }
   for (const nome of escolhidas) {
-    if (nome.toLowerCase().includes(palavraChave(nlc))) return true;
+    if (nome.toLowerCase().includes(chave)) return true;
   }
   return false;
 }

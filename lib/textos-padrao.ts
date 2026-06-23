@@ -148,11 +148,13 @@ export function medidaAtende(d: any, nomeQuadro: string): boolean {
   const nlc = nomeQuadro.toLowerCase();
   const chave = palavraChave(nlc);
 
-  // Se a edificação se enquadra na Tabela 5 (memorial simplificado),
+  // Se a edificação se enquadra na Tabela 5 do CSCIP/PR (memorial simplificado),
   // usa EXCLUSIVAMENTE medidas_cscip — que reflete a tabela oficial.
   // Isso evita que sugerirMedidas (baseada em heurísticas de área/altura)
   // adicione Brigada e Hidrante indevidamente para divisões como F-2.
-  if (simplificada) {
+  // Para SC as INs têm critérios próprios, então mantém o comportamento normal.
+  const uf: string = (d?.uf || 'PR').toUpperCase();
+  if (simplificada && uf !== 'SC') {
     return cscip.some(
       (m) => m.status === 'EXIGIDO' && m.nome.toLowerCase().includes(chave)
     );

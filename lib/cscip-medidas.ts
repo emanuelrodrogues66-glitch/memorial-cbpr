@@ -79,22 +79,54 @@ export function getMedidasCSCIP(
   const t: Tabela = {};
 
   if (simp) {
+    // -----------------------------------------------------------------------
+    // TABELA 5 DO CSCIP — Exigências para edificações enquadradas no
+    // Memorial Simplificado (RL <= 1.500 m² e h <= 9 m / RM <= 1.000 m² e h <= 6 m)
+    // Implementação fiel à tabela oficial.
+    // -----------------------------------------------------------------------
+
+    // Saídas, Sinalização e Extintores: exigidos para TODOS os grupos
     t['Saídas de emergência'] = E();
-    t['Iluminação de emergência'] = E();
     t['Sinalização de emergência'] = E();
     t['Extintores'] = E();
 
-    if (grupo === 'E') {
-      t['Brigada de incêndio'] = C('Exigido apenas para divisões E-5 e E-6');
+    // Iluminação de Emergência: exigida para todos EXCETO grupo L
+    if (grupo !== 'L') {
+      t['Iluminação de emergência'] = E();
     }
-    if (['F', 'H'].includes(grupo)) {
+
+    // Controle de Materiais de Acabamento
+    // Exigido: B, F (exceto F-9 e F-10), H-2/H-3/H-5, L-1
+    // Não exigido: A, C, D, G, M3, E, F-9, F-10, H-1/H-4/H-6, I, J
+    if (grupo === 'B' || grupo === 'L') {
       t['Controle de materiais de acabamento'] = E();
-      t['Brigada de incêndio'] = C(
-        'Exigido p/ lotação >400 pessoas (F-3, F-7) ou >100 pessoas (I, J)'
-      );
-      t['Detecção de incêndio'] = C(
-        'Exigido p/ lotação >200 pessoas em locais com carga de incêndio ou forro combustível'
-      );
+    } else if (grupo === 'F') {
+      if (divisao !== 'F-9' && divisao !== 'F-10') {
+        t['Controle de materiais de acabamento'] = E();
+      }
+    } else if (grupo === 'H') {
+      if (divisao === 'H-2' || divisao === 'H-3' || divisao === 'H-5') {
+        t['Controle de materiais de acabamento'] = E();
+      }
+    }
+
+    // Brigada de Incêndio (somente divisões específicas)
+    // E-5, E-6: nota 14 | F-3, F-7, F-11, F-6: nota 3 | H-2, H-3, H-5: nota 1
+    if (grupo === 'E' && (divisao === 'E-5' || divisao === 'E-6')) {
+      t['Brigada de incêndio'] = E('Exigido para E-5 e E-6 (nota 14 Tabela 5 CSCIP)');
+    } else if (grupo === 'F' &&
+      (divisao === 'F-3' || divisao === 'F-7' || divisao === 'F-11' || divisao === 'F-6')) {
+      t['Brigada de incêndio'] = E('Exigido conforme nota 3 da Tabela 5 do CSCIP');
+    } else if (grupo === 'H' &&
+      (divisao === 'H-2' || divisao === 'H-3' || divisao === 'H-5')) {
+      t['Brigada de incêndio'] = E('Exigido conforme nota 1 da Tabela 5 do CSCIP');
+    }
+
+    // Detecção de Incêndio (somente F-3, F-7, F-1, F-5, F-11 — nota 2)
+    if (grupo === 'F' &&
+      (divisao === 'F-3' || divisao === 'F-7' || divisao === 'F-1' ||
+       divisao === 'F-5' || divisao === 'F-11')) {
+      t['Detecção de incêndio'] = E('Exigido conforme nota 2 da Tabela 5 do CSCIP');
     }
 
     return { medidas: toLista(t), simplificada: true };

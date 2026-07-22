@@ -72,7 +72,8 @@ export default function ProjetoForm({ projeto, profile }: { projeto: any; profil
     memorial_construcao: projeto.dados?.memorial_construcao ?? {},
     info_operacional: projeto.dados?.info_operacional ?? {},
     acesso_viaturas: projeto.dados?.acesso_viaturas ?? {},
-    termo_saidas: projeto.dados?.termo_saidas ?? {}
+    termo_saidas: projeto.dados?.termo_saidas ?? {},
+    nib: projeto.dados?.nib ?? '',
   }));
 
   // Recalcula derivados
@@ -263,6 +264,7 @@ function Etapa1({ dados, up }: any) {
           {okCnpj && <p className="text-xs text-success mt-1">{okCnpj}</p>}
         </Field>
         <Field label="Inscrição Imobiliária"><input className="input" value={dados.inscricao_imobiliaria} onChange={e => up('inscricao_imobiliaria', e.target.value)} /></Field>
+        <Field label="NIB (Nº do processo no Bombeiro)"><input className="input" placeholder="ex.: 12345/2024" value={dados.nib || ''} onChange={e => up('nib', e.target.value)} /></Field>
         <Field label="Telefone (opcional)"><input className="input" value={dados.telefone} onChange={e => up('telefone', e.target.value)} /></Field>
         <Field label="E-mail de contato (opcional)"><input type="email" className="input" value={dados.email_contato} onChange={e => up('email_contato', e.target.value)} /></Field>
         <Field label="Endereço"><input className="input" value={dados.endereco} onChange={e => up('endereco', e.target.value)} /></Field>

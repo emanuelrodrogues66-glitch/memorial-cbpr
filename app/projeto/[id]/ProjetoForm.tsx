@@ -12,6 +12,7 @@ import {
   novoPavimento,
   novoAmbiente,
   novaSaidaReal,
+  isGrupoF,
   type Pavimento,
   type Ambiente,
   type SaidaReal,
@@ -764,6 +765,57 @@ function PavimentoCard({
                     onChange={(e) => onPatchAmb(a.id, { dormitorios: Number(e.target.value) })}
                   />
                   <p className="text-xs text-muted mt-1">2 pessoas/dormitório — NPT 011</p>
+                </div>
+              ) : isGrupoF(a.div) ? (
+                <div className="sm:col-span-2 space-y-2">
+                  <label className="label">Cálculo de população</label>
+                  <div className="flex gap-3">
+                    <label className="flex items-center gap-1.5 text-sm cursor-pointer">
+                      <input
+                        type="radio"
+                        name={`leiaute-${a.id}`}
+                        checked={!a.uso_leiaute}
+                        onChange={() => onPatchAmb(a.id, { uso_leiaute: false, assentos: 0 })}
+                      />
+                      Por área
+                    </label>
+                    <label className="flex items-center gap-1.5 text-sm cursor-pointer">
+                      <input
+                        type="radio"
+                        name={`leiaute-${a.id}`}
+                        checked={!!a.uso_leiaute}
+                        onChange={() => onPatchAmb(a.id, { uso_leiaute: true })}
+                      />
+                      Por leiaute (assentos)
+                    </label>
+                  </div>
+                  {a.uso_leiaute ? (
+                    <>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        className="input"
+                        placeholder="Nº de cadeiras/assentos"
+                        value={a.assentos || ''}
+                        onChange={(e) => onPatchAmb(a.id, { assentos: Number(e.target.value) })}
+                      />
+                      <p className="text-xs text-muted">População = nº de assentos — NPT 011</p>
+                    </>
+                  ) : (
+                    <>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className="input"
+                        placeholder="Área a excluir (m²)"
+                        value={a.excluir || ''}
+                        onChange={(e) => onPatchAmb(a.id, { excluir: Number(e.target.value) })}
+                      />
+                      <p className="text-xs text-muted">Excluir área (m²)</p>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className="sm:col-span-2">

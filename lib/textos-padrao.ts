@@ -89,14 +89,18 @@ export function textoTermoSaidas(d: any): string {
   const uf = ufDe(d);
   const ts = d?.termo_saidas || {};
   const ocupacao = d?.descricao_atividade || d?.ocupacao || 'edificação';
+  const endereco = d?.endereco ? `R. ${d.endereco}`.replace(/^R\. R\. /i, 'R. ') : '';
+  const cidade = d?.cidade ? `, no município de ${d.cidade.toUpperCase()}` : '';
+  const nib = d?.nib ? ` sob o NIB: ${d.nib}` : ', ';
+  const localizacao = endereco ? `, situada na: ${endereco}${cidade}` : '';
   return (
     ts.observacoes ||
     `Visando a concessão do Certificado de Vistoria de Estabelecimento do ${rotuloCBM(uf)}, ` +
       `atestamos que as PORTAS DE SAÍDA DE EMERGÊNCIA da ` +
-      `edificação classificada como ${ocupacao} permanecerão destrancadas durante todo ` +
-      `o horário de funcionamento da edificação, abrindo no sentido do fluxo de saída ` +
-      `e com sinalização adequada. Assumimos toda a responsabilidade civil e criminal ` +
-      `quanto à permanência das portas em condições de uso imediato em caso de emergência.`
+      `edificação classificada como ${ocupacao}${localizacao} ` +
+      `que possui Plano de Segurança Contra Incêndio e Pânico aprovado nesse Corpo de Bombeiros${nib} ` +
+      `encontram-se em comunicação direta com o exterior/logradouro público e são utilizadas com a finalidade ` +
+      `de segurança patrimonial, permanecendo abertas durante toda a permanência de pessoas na edificação.`
   );
 }
 

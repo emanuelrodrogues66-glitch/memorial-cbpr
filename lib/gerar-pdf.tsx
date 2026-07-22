@@ -825,7 +825,9 @@ function renderSaidasPdf(d: any) {
                       <Text style={[styles.badge, v.atende ? styles.badgeOk : styles.badgeFail]}>
                         {' '}{v.atende ? 'ATENDE' : 'NÃO ATENDE'}{' '}
                       </Text>{' '}
-                      Total real: {v.up_real} UP • Exigido: {v.up_exigido} UP
+                      {v.acesso_restrito
+                        ? `Acesso restrito (pop. < 10) — mínimo 0,80 m por elemento`
+                        : `Total real: ${v.up_real} UP • Exigido: ${v.up_exigido} UP`}
                     </Text>
                   </View>
                 );

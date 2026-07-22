@@ -150,6 +150,8 @@ export type Ambiente = {
   area: number; // área útil em m²
   excluir: number; // área a excluir em m²
   dormitorios?: number; // nº de dormitórios — usado para A-1, A-2, A-3 (2 pessoas/dorm)
+  uso_leiaute?: boolean; // grupo F: usar nº de assentos em vez de área
+  assentos?: number; // grupo F com leiaute: nº de cadeiras/assentos = população direta
 };
 
 // Item real informado pelo usuário (porta/escada/acesso instalado)
@@ -197,18 +199,40 @@ export function ambienteTemOcupacao(
   if (data[div].special === 'vagas') return area > 0;
   // Para dormitórios (A-1, A-2, A-3), o critério é ter ao menos 1 dormitório informado
   if (data[div].special === 'dorm') return (Number(a.dormitorios) || 0) > 0;
+  // Para grupo F com leiaute, o critério é ter ao menos 1 assento informado
+  if (isGrupoF(div) && a.uso_leiaute) return (Number(a.assentos) || 0) > 0;
   return net > 0;
+}
+
+export function isGrupoF(div: string): boolean {
+  return /^F-\d+$/.test((div || '').trim());
 }
 
 export function calcularPopulacaoAmbiente(
   a: Ambiente,
   data: Record<string, DivCsicipSaida> = DATA_SAIDAS
-): { pop: number; net: number; unit: 'm²' | 'vagas' | 'dorm'; ok: boolean; descricao?: string } | null {
+): { pop: number; net: number; unit: 'm²' | 'vagas' | 'dorm' | 'assentos'; ok: boolean; descricao?: string } | null {
   const d = data[a.div];
   if (!d) return null;
   const area = Number(a.area) || 0;
   const excl = Number(a.excluir) || 0;
   const net = Math.max(0, area - excl);
+
+  // Grupo F com leiaute: população = nº de assentos informados
+  if (isGrupoF(a.div) && a.uso_leiaute) {
+    const assentos = Number(a.assentos) || 0;
+    if (assentos <= 0) {
+      return {
+        pop: 0,
+        net: 0,
+        unit: 'assentos',
+        ok: false,
+        descricao: 'Informe o número de assentos/cadeiras para calcular a população pelo leiaute.'
+      };
+    }
+    return { pop: assentos, net: assentos, unit: 'assentos', ok: true };
+  }
+
   if (d.special === 'dorm') {
     const dorms = Number(a.dormitorios) || 0;
     if (dorms <= 0) {
@@ -268,7 +292,7 @@ export type DimPavimento = {
     nome: string;
     divisao: string;
     net: number;
-    unit: 'm²' | 'vagas' | 'dorm';
+    unit: 'm²' | 'vagas' | 'dorm' | 'assentos';
     pop: number;
     erro?: string;
   }>;
@@ -477,7 +501,7 @@ export function novoPavimento(id: number, label?: string): Pavimento {
 }
 
 export function novoAmbiente(id: number): Ambiente {
-  return { id, nome: '', div: '', area: 0, excluir: 0, dormitorios: 0 };
+  return { id, nome: '', div: '', area: 0, excluir: 0, dormitorios: 0, uso_leiaute: false, assentos: 0 };
 }
 
 export function novaSaidaReal(id: number, tipo: ComponenteSaida = 'porta'): SaidaReal {

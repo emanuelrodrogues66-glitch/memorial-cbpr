@@ -723,6 +723,8 @@ function renderSaidasPdf(d: any) {
               ? `${a.net} dorm.`
               : a.unit === 'vagas'
               ? `${a.net} vagas`
+              : a.unit === 'assentos'
+              ? `${a.net} assentos`
               : `${a.net.toFixed(2)} m²`;
             return (
             <View key={a.id} style={styles.tableRow}>

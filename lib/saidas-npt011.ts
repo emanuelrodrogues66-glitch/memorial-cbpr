@@ -94,6 +94,7 @@ export const MIN_UP_ESCADA = 2;
 export const MIN_UP_ACESSO = 2;
 export const MIN_LARGURA_PORTA = 0.80; // 1 UP
 export const MIN_LARGURA_ESCADA = 1.20; // 2 UP
+export const MIN_LARGURA_ESCADA_RESTRITA = 0.80; // 1 UP — acesso restrito (pop < 10) NPT 011 item 5.3.1
 export const MIN_LARGURA_ACESSO = 1.20; // 2 UP
 
 // Lista de divisões agrupadas (para selects)
@@ -169,6 +170,7 @@ export type Pavimento = {
   componentes_ativos: Record<ComponenteSaida, boolean>;
   ambientes: Ambiente[];
   saidas_reais: SaidaReal[];
+  acesso_restrito?: boolean; // população < 10 → escada mínima 0,80 m (NPT 011 item 5.3.1)
 };
 
 // === Funções de cálculo ===
@@ -319,6 +321,8 @@ export type VerificacaoPavimento = {
   atende: boolean;
   quantidade_elementos: number;
   detalhes: string;
+  acesso_restrito?: boolean; // escada com largura mínima 0,80m por população < 10
+  largura_min_m?: number;    // largura mínima aplicável (0,80 ou 1,20)
 };
 
 export function dimensionarPavimento(
@@ -397,6 +401,8 @@ export function dimensionarPavimento(
   // Verificação: somatório das UPs reais por TIPO. Cada elemento real contribui com
   // floor(largura / UP) UPs, pois só UPs inteiras são contadas (item 5.4.1 NPT 011).
   // Em seguida, o total é comparado com o UP exigido do bloco/pavimento.
+  // Acesso restrito (NPT 011 item 5.3.1): se pop < 10 e marcado, escada mínima = 0,80 m.
+  const isAcessoRestrito = !!p.acesso_restrito && populacao_total < 10;
   const verificacao: VerificacaoPavimento[] = dimensionamento.map((dim) => {
     const reais = p.saidas_reais.filter((s) => s.tipo === dim.mode);
     const larguraReal = reais.reduce(
@@ -409,6 +415,9 @@ export function dimensionarPavimento(
       return s + upPorElemento * (Number(x.quantidade) || 0);
     }, 0);
     const qtd = reais.reduce((s, x) => s + (Number(x.quantidade) || 0), 0);
+    // Largura mínima efetiva: para escada com acesso restrito usa 0,80 m
+    const ehEscadaRestrita = dim.mode === 'escada' && isAcessoRestrito;
+    const larguraMinEfetiva = ehEscadaRestrita ? MIN_LARGURA_ESCADA_RESTRITA : COMPONENTE_MIN_LARGURA[dim.mode];
     const detalhes =
       reais.length === 0
         ? 'Nenhum elemento informado'
@@ -418,6 +427,10 @@ export function dimensionarPavimento(
               return `${x.identificacao || COMPONENTE_LABEL[x.tipo]} ${round2(x.largura_m)} m × ${x.quantidade} (${upEl} UP cada)`;
             })
             .join(' • ');
+    // Para acesso restrito: atende se largura real >= 0,80 m (ignora UPs, é critério de largura direta)
+    const atende = ehEscadaRestrita
+      ? reais.every((x) => (Number(x.largura_m) || 0) >= MIN_LARGURA_ESCADA_RESTRITA) && qtd > 0
+      : upReal >= dim.total_up && larguraReal >= dim.total_largura_m;
     return {
       tipo: dim.mode,
       label: dim.label,
@@ -425,9 +438,11 @@ export function dimensionarPavimento(
       largura_exigida_m: dim.total_largura_m,
       up_real: upReal,
       largura_real_m: round2(larguraReal),
-      atende: upReal >= dim.total_up && larguraReal >= dim.total_largura_m,
+      atende,
       quantidade_elementos: qtd,
-      detalhes
+      detalhes,
+      acesso_restrito: ehEscadaRestrita,
+      largura_min_m: larguraMinEfetiva
     };
   });
 

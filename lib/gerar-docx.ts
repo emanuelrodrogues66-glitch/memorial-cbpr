@@ -593,7 +593,9 @@ function renderSaidasDocx(d: any): any[] {
             spacing: { after: 60 },
             children: [
               new TextRun({
-                text: `    ${v.atende ? 'ATENDE' : 'NÃO ATENDE'} — Total real: ${v.up_real} UP • Exigido: ${v.up_exigido} UP`,
+                text: v.acesso_restrito
+                  ? `    ${v.atende ? 'ATENDE' : 'NÃO ATENDE'} — Acesso restrito (pop. < 10 pessoas) — largura mínima 0,80 m por elemento — NPT 011 item 5.3.1`
+                  : `    ${v.atende ? 'ATENDE' : 'NÃO ATENDE'} — Total real: ${v.up_real} UP • Exigido: ${v.up_exigido} UP`,
                 bold: true,
                 size: 17,
                 color: v.atende ? '437A22' : 'A12C7B'

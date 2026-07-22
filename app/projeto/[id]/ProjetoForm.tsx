@@ -595,6 +595,7 @@ function Etapa4({ dados, up, calc, projetoId, revitToken }: any) {
             onAddSaida={(t) => addSaida(p.id, t)}
             onRemoveSaida={(sid) => removeSaida(p.id, sid)}
             onPatchSaida={(sid, patch) => patchSaida(p.id, sid, patch)}
+            onToggleAcessoRestrito={() => patchPav(p.id, { acesso_restrito: !p.acesso_restrito })}
           />
         );
       })}
@@ -664,7 +665,8 @@ function PavimentoCard({
   onPatchAmb,
   onAddSaida,
   onRemoveSaida,
-  onPatchSaida
+  onPatchSaida,
+  onToggleAcessoRestrito
 }: {
   pav: Pavimento;
   dim?: DimPavimento;
@@ -678,8 +680,11 @@ function PavimentoCard({
   onAddSaida: (t: ComponenteSaida) => void;
   onRemoveSaida: (sid: number) => void;
   onPatchSaida: (sid: number, patch: Partial<SaidaReal>) => void;
+  onToggleAcessoRestrito: () => void;
 }) {
   const modos: ComponenteSaida[] = ['porta', 'escada', 'acesso'];
+  const popTotal = dim?.populacao_total ?? 0;
+  const podeAcessoRestrito = popTotal > 0 && popTotal < 10;
 
   return (
     <div className="rounded-md border border-border bg-white p-4 space-y-4">
@@ -718,6 +723,30 @@ function PavimentoCard({
           })}
         </div>
       </div>
+
+      {pav.componentes_ativos['escada'] && (
+        <div className="flex items-start gap-3 border rounded-md px-3 py-2 bg-surface">
+          <input
+            type="checkbox"
+            id={`restrito-${pav.id}`}
+            className="mt-0.5"
+            checked={!!pav.acesso_restrito}
+            onChange={onToggleAcessoRestrito}
+          />
+          <label htmlFor={`restrito-${pav.id}`} className="cursor-pointer">
+            <div className="text-sm font-medium text-ink">Escada de acesso restrito</div>
+            <div className="text-xs text-muted mt-0.5">
+              Aplica largura mínima de <strong>0,80 m</strong> para a escada quando a população do pavimento for inferior a 10 pessoas — NPT 011 item 5.3.1.
+              {!podeAcessoRestrito && popTotal > 0 && (
+                <span className="text-error ml-1">(população atual: {popTotal} pessoas — mínimo não atendido)</span>
+              )}
+              {podeAcessoRestrito && (
+                <span className="text-success ml-1">(população: {popTotal} pessoas ✓)</span>
+              )}
+            </div>
+          </label>
+        </div>
+      )}
 
       <div>
         <div className="text-xs uppercase tracking-wide text-muted mb-2">Ambientes</div>
@@ -1079,8 +1108,15 @@ function PavimentoCard({
                     {v.atende ? 'ATENDE' : 'NÃO ATENDE'}
                   </span>
                   <span className="font-semibold">{v.label}</span>
+                  {v.acesso_restrito && (
+                    <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+                      Acesso restrito — mín. 0,80 m
+                    </span>
+                  )}
                   <span className="text-muted">
-                    Exigido: {v.up_exigido} UP / {v.largura_exigida_m.toFixed(2)} m
+                    {v.acesso_restrito
+                      ? `Mínimo: 0,80 m por elemento`
+                      : `Exigido: ${v.up_exigido} UP / ${v.largura_exigida_m.toFixed(2)} m`}
                   </span>
                   <span className="text-muted">→</span>
                   <span>

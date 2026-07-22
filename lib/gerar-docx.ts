@@ -474,6 +474,8 @@ function renderSaidasDocx(d: any): any[] {
         ? `${a.net} dorm.`
         : a.unit === 'vagas'
         ? `${a.net} vagas`
+        : a.unit === 'assentos'
+        ? `${a.net} assentos`
         : `${a.net.toFixed(2)} m²`;
       return new TableRow({
         children: [

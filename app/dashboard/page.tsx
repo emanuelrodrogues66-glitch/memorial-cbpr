@@ -3,8 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import NovoProjetoButton from './NovoProjetoButton';
 import LogoutButton from './LogoutButton';
-import DuplicarProjetoButton from './DuplicarProjetoButton';
-import ExcluirProjetoButton from './ExcluirProjetoButton';
+import DashboardClient from './DashboardClient';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +20,7 @@ export default async function Dashboard() {
 
   const { data: projetos } = await supabase
     .from('memorial_projetos')
-    .select('id, nome_obra, status, updated_at, created_at')
+    .select('id, nome_obra, status, updated_at, uf, projetista')
     .order('updated_at', { ascending: false });
 
   return (
@@ -48,7 +47,7 @@ export default async function Dashboard() {
       </header>
 
       <section className="max-w-6xl mx-auto px-6 py-10">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-ink">Meus projetos</h1>
             <p className="text-sm text-muted mt-1">
@@ -58,36 +57,16 @@ export default async function Dashboard() {
           <NovoProjetoButton />
         </div>
 
-        <div className="mt-8 grid gap-3">
-          {(!projetos || projetos.length === 0) && (
-            <div className="card text-center py-16">
-              <p className="text-muted">Você ainda não tem nenhum projeto.</p>
-              <div className="mt-4 inline-block">
-                <NovoProjetoButton />
-              </div>
+        {(!projetos || projetos.length === 0) ? (
+          <div className="card text-center py-16">
+            <p className="text-muted">Você ainda não tem nenhum projeto.</p>
+            <div className="mt-4 inline-block">
+              <NovoProjetoButton />
             </div>
-          )}
-          {projetos?.map((p) => (
-            <div
-              key={p.id}
-              className="card flex items-center justify-between hover:border-primary transition"
-            >
-              <Link href={`/projeto/${p.id}`} className="flex-1 min-w-0">
-                <div className="font-semibold text-ink truncate">{p.nome_obra || 'Projeto sem nome'}</div>
-                <div className="text-xs text-muted mt-1">
-                  Atualizado em {new Date(p.updated_at).toLocaleString('pt-BR')}
-                </div>
-              </Link>
-              <div className="flex items-center gap-3 ml-3">
-                <span className="text-xs uppercase tracking-wide font-medium text-primary border border-primary/30 rounded-full px-3 py-1">
-                  {p.status}
-                </span>
-                <DuplicarProjetoButton projetoId={p.id} nomeAtual={p.nome_obra || ''} />
-                <ExcluirProjetoButton projetoId={p.id} nomeAtual={p.nome_obra || ''} />
-              </div>
-            </div>
-          ))}
-        </div>
+          </div>
+        ) : (
+          <DashboardClient projetos={projetos} />
+        )}
       </section>
     </main>
   );

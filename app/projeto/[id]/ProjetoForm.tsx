@@ -92,7 +92,9 @@ export default function ProjetoForm({ projeto, profile }: { projeto: any; profil
       .update({
         nome_obra: merged.nome_obra || 'Sem nome',
         dados: merged,
-        status: etapa === ETAPAS.length - 1 ? 'concluido' : 'rascunho'
+        status: etapa === ETAPAS.length - 1 ? 'concluido' : 'rascunho',
+        uf: merged.uf || 'PR',
+        projetista: merged.responsavel_tecnico || ''
       })
       .eq('id', projeto.id);
     setSalvando(false);

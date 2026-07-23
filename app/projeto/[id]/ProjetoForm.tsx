@@ -1141,7 +1141,9 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Etapa5({ dados, calc }: any) {
+function Etapa5({ dados, up, calc }: any) {
+  const uf = (dados.uf || 'PR') as UF;
+  const isSC = uf === 'SC';
   const popFixa = Number(dados.info_operacional?.populacao_fixa) || 0;
   const popFlut = Number(dados.info_operacional?.populacao_flutuante) || 0;
   const popTotal = popFixa + popFlut;
@@ -1149,17 +1151,55 @@ function Etapa5({ dados, calc }: any) {
   const isGrupoF = grupo.startsWith('F');
   const popAjustada = Number(calc.brigada_populacao_ajustada) || popTotal;
   const brigadistas = Number(calc.brigadistas_necessarios) || Math.max(1, Math.ceil(popAjustada / 200));
+  const brigadaIsento = Boolean(calc.brigada_isento);
+  const brigadaTreinamento: string = calc.brigada_treinamento || '';
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-bold">{`Brigada de incêndio (${nptOuIn((dados.uf || 'PR') as UF, '017')})`}</h2>
-      <p className="text-sm text-muted">
-        Cálculo conforme {itemNorma((dados.uf || 'PR') as UF, '017', '6.2')}: 1 brigadista para cada 200 pessoas,
-        arredondado para o inteiro imediatamente superior. Para edificações do
-        Grupo F (locais de reunião de público) aplica-se acréscimo de 30% sobre a população.
-      </p>
+      <h2 className="text-xl font-bold">{`Brigada de incêndio (${nptOuIn(uf, '017')})`}</h2>
 
-      {popTotal === 0 && (
+      {isSC ? (
+        <p className="text-sm text-muted">
+          Cálculo conforme IN 28 do CBMSC, Anexo A, Tabela 3. O dimensionamento é feito pela
+          <strong> população fixa (funcionários por turno)</strong>, e não pela população de usuários.
+          Informe abaixo a quantidade de funcionários e se a edificação possui chuveiros automáticos.
+        </p>
+      ) : (
+        <p className="text-sm text-muted">
+          Cálculo conforme {itemNorma(uf, '017', '6.2')}: 1 brigadista para cada 200 pessoas,
+          arredondado para o inteiro imediatamente superior. Para edificações do
+          Grupo F (locais de reunião de público) aplica-se acréscimo de 30% sobre a população.
+        </p>
+      )}
+
+      {isSC && (
+        <div className="card space-y-3">
+          <h3 className="font-semibold text-ink">Dados para cálculo (IN 28 — SC)</h3>
+          <Field label="Nº de funcionários por turno (população fixa)" hint="Somente funcionários contam — não incluir clientes ou usuários (Nota b, Tabela 3, IN 28).">
+            <input
+              type="number"
+              min="0"
+              step="1"
+              className="input"
+              placeholder="ex.: 15"
+              value={dados.brigada_populacao_fixa || ''}
+              onChange={(e) => up('brigada_populacao_fixa', Number(e.target.value))}
+            />
+          </Field>
+          <Field label="Possui chuveiros automáticos (sprinklers)?">
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={!!dados.brigada_possui_sprinkler}
+                onChange={(e) => up('brigada_possui_sprinkler', e.target.checked)}
+              />
+              Sim — aumenta o GPF em 5 (Nota 1, Tabela 3, IN 28)
+            </label>
+          </Field>
+        </div>
+      )}
+
+      {!isSC && popTotal === 0 && (
         <div className="rounded-md bg-[#FFF2CC] border border-[#E2C77E] p-3 text-sm text-[#854F0B]">
           Informe a população fixa e flutuante na etapa 8 (Dados complementares → Informações operacionais)
           para o cálculo da brigada.
@@ -1167,12 +1207,24 @@ function Etapa5({ dados, calc }: any) {
       )}
 
       <div className="rounded-md bg-surface border border-border p-4 text-sm grid sm:grid-cols-3 gap-3">
-        <Info label="População fixa" value={String(popFixa)} />
-        <Info label="População flutuante" value={String(popFlut)} />
-        <Info label="População total" value={String(popTotal)} />
-        <Info label="Grupo" value={dados.grupo || '—'} />
-        <Info label="Acréscimo Grupo F (+30%)" value={isGrupoF ? 'Sim' : 'Não'} />
-        <Info label="População ajustada" value={String(popAjustada)} />
+        {isSC ? (
+          <>
+            <Info label="Funcionários/turno" value={String(Number(dados.brigada_populacao_fixa) || 0)} />
+            <Info label="Divisão" value={dados.divisao || '—'} />
+            <Info label="Sprinkler" value={dados.brigada_possui_sprinkler ? 'Sim (+5 GPF)' : 'Não'} />
+            {brigadaTreinamento && <Info label="Nível de treinamento" value={brigadaTreinamento} />}
+            <Info label="Isento" value={brigadaIsento ? 'Sim' : 'Não'} />
+          </>
+        ) : (
+          <>
+            <Info label="População fixa" value={String(popFixa)} />
+            <Info label="População flutuante" value={String(popFlut)} />
+            <Info label="População total" value={String(popTotal)} />
+            <Info label="Grupo" value={dados.grupo || '—'} />
+            <Info label="Acréscimo Grupo F (+30%)" value={isGrupoF ? 'Sim' : 'Não'} />
+            <Info label="População ajustada" value={String(popAjustada)} />
+          </>
+        )}
       </div>
 
       <div className="card">

@@ -865,7 +865,8 @@ function secBrigada(d: any): any[] {
   // SC: dimensionamento por IN-28 (GPF por divisão + isenção + nível de treinamento)
   if (uf === 'SC') {
     const brig = Number(d.brigadistas_necessarios) || 0;
-    const popFixa = Number(d.populacao_fixa ?? d.populacao_calculada) || 0;
+    const popFixa = Number(d.brigada_populacao_fixa ?? d.populacao_fixa ?? d.populacao_calculada) || 0;
+    const possuiSprinkler = Boolean(d.brigada_possui_sprinkler);
     const isento = Boolean(d.brigada_isento);
     const treino = d.brigada_treinamento || 'Básico';
     const out: any[] = [
@@ -881,8 +882,9 @@ function secBrigada(d: any): any[] {
       h3('Dados de entrada'),
       tabela([
         row('Ocupação', ocupacaoTexto(d)),
-        row('Divisão', d.grupo),
-        row('População fixa', `${popFixa} pessoa(s)`)
+        row('Divisão', d.divisao || d.grupo),
+        row('Funcionários por turno (população fixa)', `${popFixa} pessoa(s)`),
+        row('Chuveiros automáticos (sprinklers)', possuiSprinkler ? 'Sim — GPF acrescido em 5 (Nota 1, IN 28)' : 'Não')
       ]),
       h3('Resultado')
     ];
@@ -894,7 +896,9 @@ function secBrigada(d: any): any[] {
       ));
     } else {
       out.push(tabela([
-        row('Brigadistas necessários', `${brig} brigadista(s)`),
+        para('Memória de cálculo: ' + (d.brigadistas_descricao || '')),
+        row('Brigadistas orgânicos necessários', `${brig} brigadista(s)`),
+        row('Mínimo absoluto', '3 brigadistas orgânicos (Art. 16 §2º, IN 28)'),
         row('Nível de treinamento', treino),
         row('Norma aplicável', rotuloNormaBrigada(uf))
       ]));

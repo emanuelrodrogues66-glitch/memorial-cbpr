@@ -341,7 +341,8 @@ function PageBrigada({ d }: { d: any }) {
   // SC: cálculo segue IN-28 (GPF por divisão, isenção, treinamento)
   if (uf === 'SC') {
     const brig = Number(d.brigadistas_necessarios) || 0;
-    const popFixa = Number(d.populacao_fixa ?? d.populacao_calculada) || 0;
+    const popFixa = Number(d.brigada_populacao_fixa ?? d.populacao_fixa ?? d.populacao_calculada) || 0;
+    const possuiSprinkler = Boolean(d.brigada_possui_sprinkler);
     const isento = Boolean(d.brigada_isento);
     const treino = d.brigada_treinamento || 'Básico';
     return (
@@ -356,8 +357,9 @@ function PageBrigada({ d }: { d: any }) {
         </Text>
         <Text style={styles.h2}>Dados de entrada</Text>
         <Linha k="Ocupação" v={ocupacaoTexto(d)} />
-        <Linha k="Divisão" v={d.grupo} />
-        <Linha k="População fixa" v={`${popFixa} pessoa(s)`} />
+        <Linha k="Divisão" v={d.divisao || d.grupo} />
+        <Linha k="Funcionários por turno (população fixa)" v={`${popFixa} pessoa(s)`} />
+        <Linha k="Chuveiros automáticos (sprinklers)" v={possuiSprinkler ? 'Sim — GPF acrescido em 5 (Nota 1)' : 'Não'} />
         <Text style={styles.h2}>Resultado</Text>
         {isento ? (
           <Text style={styles.pJustify}>
@@ -366,8 +368,10 @@ function PageBrigada({ d }: { d: any }) {
           </Text>
         ) : (
           <>
-            <Linha k="Brigadistas necessários" v={`${brig} brigadista(s)`} />
+            <Text style={[styles.pJustify, { marginTop: 4 }]}>{d.brigadistas_descricao}</Text>
+            <Linha k="Brigadistas orgânicos necessários" v={`${brig} brigadista(s)`} />
             <Linha k="Nível de treinamento" v={treino} />
+            <Linha k="Mínimo absoluto" v="3 brigadistas orgânicos (Art. 16 §2º, IN 28)" />
             <Linha k="Norma aplicável" v={rotuloNormaBrigada(uf)} />
           </>
         )}

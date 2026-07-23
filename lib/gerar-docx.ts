@@ -896,7 +896,7 @@ function secBrigada(d: any): any[] {
       ));
     } else {
       out.push(tabela([
-        para('Memória de cálculo: ' + (d.brigadistas_descricao || '')),
+        p('Memória de cálculo: ' + (d.brigadistas_descricao || '')),
         row('Brigadistas orgânicos necessários', `${brig} brigadista(s)`),
         row('Mínimo absoluto', '3 brigadistas orgânicos (Art. 16 §2º, IN 28)'),
         row('Nível de treinamento', treino),

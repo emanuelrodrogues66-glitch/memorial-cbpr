@@ -65,6 +65,7 @@ export default function ProjetoForm({ projeto, profile }: { projeto: any; profil
     carga_incendio_itens: projeto.dados?.carga_incendio_itens ?? [],
     medidas_protecao: projeto.dados?.medidas_protecao ?? [],
     responsavel_tecnico: projeto.dados?.responsavel_tecnico ?? profile?.full_name ?? '',
+    projetista_responsavel: projeto.dados?.projetista_responsavel ?? '',
     crea_resp: projeto.dados?.crea_resp ?? profile?.crea ?? '',
     observacoes: projeto.dados?.observacoes ?? '',
     oficio_local: projeto.dados?.oficio_local ?? projeto.dados?.cidade ?? '',
@@ -94,7 +95,7 @@ export default function ProjetoForm({ projeto, profile }: { projeto: any; profil
         dados: merged,
         status: etapa === ETAPAS.length - 1 ? 'concluido' : 'rascunho',
         uf: merged.uf || 'PR',
-        projetista: merged.responsavel_tecnico || ''
+        projetista: merged.projetista_responsavel || merged.responsavel_tecnico || ''
       })
       .eq('id', projeto.id);
     setSalvando(false);
@@ -1346,6 +1347,7 @@ function Etapa6({ dados, up, calc }: any) {
       <div className="grid sm:grid-cols-2 gap-3">
         <Field label="Responsável técnico"><input className="input" value={dados.responsavel_tecnico} onChange={e => up('responsavel_tecnico', e.target.value)} /></Field>
         <Field label="CREA / CAU"><input className="input" value={dados.crea_resp} onChange={e => up('crea_resp', e.target.value)} /></Field>
+        <Field label="Projetista responsável" hint="Pessoa da equipe que elaborou o projeto — aparece no dashboard para filtro."><input className="input" placeholder="ex.: Samira, Samuel, Aimee..." value={dados.projetista_responsavel || ''} onChange={e => up('projetista_responsavel', e.target.value)} /></Field>
         <Field label="Observações"><textarea className="input min-h-[100px]" value={dados.observacoes} onChange={e => up('observacoes', e.target.value)} /></Field>
       </div>
     </div>
